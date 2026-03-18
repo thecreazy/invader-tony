@@ -1,54 +1,87 @@
 /**
- * Centralised game state store.
- * Holds score, lives, current wave, enemy grid, and phase flags.
- * Emits events when state changes so the HUD can react without polling.
+ * Centralised game state store with a minimal event emitter.
+ * Everything that changes score, lives, wave, or game phase goes through here.
  */
 
-/**
- * @typedef {{
- *   score: number,
- *   lives: number,
- *   wave: number,
- *   paused: boolean,
- *   gameOver: boolean,
- *   won: boolean,
- * }} State
- */
+import { CONFIG } from '../config.js';
+
+export const STATES = {
+  MENU:       'MENU',
+  PLAYING:    'PLAYING',
+  PAUSED:     'PAUSED',
+  BOSS_FIGHT: 'BOSS_FIGHT',
+  GAME_OVER:  'GAME_OVER',
+  VICTORY:    'VICTORY',
+};
 
 /**
- * Creates a fresh, zeroed game state object with an event emitter interface.
- * @returns {{ get: () => State, reset: () => void, on: (event: string, cb: Function) => void, off: (event: string, cb: Function) => void }}
+ * @returns {{
+ *   current: string, score: number, lives: number, wave: number,
+ *   transition(s:string):void, addScore(n:number):void, loseLife():number,
+ *   setWave(n:number):void, on(e:string,cb:Function):void,
+ *   off(e:string,cb:Function):void, get():object, reset():void
+ * }}
  */
 export function createGameState() {
-  // TODO: implement
+  /** @type {Record<string, Function[]>} */
+  const listeners = {};
+
+  let _current = STATES.PLAYING;
+  let _score   = 0;
+  let _lives   = CONFIG.PLAYER.LIVES;
+  let _wave    = 1;
+
+  function emit(event, data) {
+    const cbs = listeners[event];
+    if (cbs) for (const cb of cbs) cb(data);
+  }
 
   return {
-    /** Returns a shallow copy of the current state. */
-    get() {
-      // TODO: implement
+    get current() { return _current; },
+    get score()   { return _score;   },
+    get lives()   { return _lives;   },
+    get wave()    { return _wave;    },
+
+    transition(newState) {
+      _current = newState;
+      emit('stateChanged', newState);
     },
 
-    /** Resets state to initial values. */
-    reset() {
-      // TODO: implement
+    addScore(points) {
+      _score += points;
+      emit('score', _score);
     },
 
-    /**
-     * Subscribes to a state change event.
-     * @param {string} event
-     * @param {Function} cb
-     */
+    /** @returns {number} remaining lives */
+    loseLife() {
+      _lives = Math.max(0, _lives - 1);
+      emit('lives', _lives);
+      return _lives;
+    },
+
+    setWave(n) {
+      _wave = n;
+      emit('wave', n);
+    },
+
     on(event, cb) {
-      // TODO: implement
+      (listeners[event] ??= []).push(cb);
     },
 
-    /**
-     * Unsubscribes from a state change event.
-     * @param {string} event
-     * @param {Function} cb
-     */
     off(event, cb) {
-      // TODO: implement
+      if (!listeners[event]) return;
+      listeners[event] = listeners[event].filter(fn => fn !== cb);
+    },
+
+    get() {
+      return { current: _current, score: _score, lives: _lives, wave: _wave };
+    },
+
+    reset() {
+      _current = STATES.PLAYING;
+      _score   = 0;
+      _lives   = CONFIG.PLAYER.LIVES;
+      _wave    = 1;
     },
   };
 }

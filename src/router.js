@@ -1,20 +1,14 @@
 /**
- * Hash-based SPA router.
+ * Hash-based SPA router with code splitting via dynamic import().
  * Each page module must export mount(container) and unmount().
- * The router calls unmount() on the current page before mounting the next.
  */
 
-import { HomePage } from './pages/HomePage.js';
-import { GamePage } from './pages/GamePage.js';
-import { EndPage } from './pages/EndPage.js';
-import { LeaderboardPage } from './pages/LeaderboardPage.js';
-
-/** @type {Record<string, { mount: (container: HTMLElement) => void, unmount: () => void }>} */
-const ROUTES = {
-  '#home': HomePage,
-  '#game': GamePage,
-  '#end': EndPage,
-  '#leaderboard': LeaderboardPage,
+/** @type {Record<string, () => Promise<any>>} */
+const ROUTE_LOADERS = {
+  '#home':        () => import('./pages/HomePage.js'),
+  '#game':        () => import('./pages/GamePage.js'),
+  '#end':         () => import('./pages/EndPage.js'),
+  '#leaderboard': () => import('./pages/LeaderboardPage.js'),
 };
 
 const DEFAULT_ROUTE = '#home';
@@ -28,21 +22,31 @@ let currentHash = '';
 /** @type {HTMLElement | null} */
 let appContainer = null;
 
+/** @type {boolean} */
+let routing = false;
+
 /**
  * Resolves the current hash to a route key, falling back to the default.
  * @returns {string}
  */
 function resolveHash() {
   const hash = window.location.hash || DEFAULT_ROUTE;
-  return ROUTES[hash] ? hash : DEFAULT_ROUTE;
+  return ROUTE_LOADERS[hash] ? hash : DEFAULT_ROUTE;
 }
 
 /**
  * Mounts the page matching the current URL hash.
  */
-function handleRoute() {
+async function handleRoute() {
+  if (routing) return;
+  routing = true;
+
   const hash = resolveHash();
-  if (hash === currentHash) return;
+
+  if (hash === currentHash) {
+    routing = false;
+    return;
+  }
 
   if (currentPage) {
     currentPage.unmount();
@@ -50,11 +54,22 @@ function handleRoute() {
   }
 
   currentHash = hash;
-  currentPage = ROUTES[hash];
 
-  if (appContainer) {
-    currentPage.mount(appContainer);
+  try {
+    const mod = await ROUTE_LOADERS[hash]();
+    // Support modules that export mount/unmount directly or via a named page object
+    currentPage = typeof mod.mount === 'function'
+      ? mod
+      : (mod.HomePage ?? mod.GamePage ?? mod.EndPage ?? mod.LeaderboardPage ?? mod.default);
+
+    if (appContainer && currentPage) {
+      currentPage.mount(appContainer);
+    }
+  } catch (err) {
+    console.error(`[Router] Failed to load route ${hash}:`, err);
   }
+
+  routing = false;
 }
 
 /**

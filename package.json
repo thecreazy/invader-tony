@@ -1,0 +1,18 @@
+{
+  "name": "cage-invaders",
+  "version": "0.1.0",
+  "description": "Space Invaders clone featuring Nicholas Cage as the alien enemy",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.172.0"
+  },
+  "devDependencies": {
+    "vite": "^6.2.0",
+    "vite-plugin-glsl": "^1.3.1"
+  }
+}

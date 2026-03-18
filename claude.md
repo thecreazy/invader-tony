@@ -13,6 +13,7 @@ The rest of the UI (menus, leaderboard) is pure HTML/CSS.
 - 3D/effects: Three.js (game scene only)
 - Shaders: GLSL via vite-plugin-glsl
 - No frameworks — vanilla JS with ES modules
+- No TypeScript (plain JS with JSDoc comments for types)
 
 ## Design Bible
 

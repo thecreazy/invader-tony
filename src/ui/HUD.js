@@ -23,14 +23,14 @@ function injectStyles() {
       80%  { opacity: 1; }
       100% { opacity: 0; }
     }
-    @keyframes nic-cage-rainbow {
+    @keyframes tony-rainbow {
       0%   { filter: hue-rotate(0deg)   drop-shadow(0 0 8px #ff0044); }
       25%  { filter: hue-rotate(90deg)  drop-shadow(0 0 8px #ffff00); }
       50%  { filter: hue-rotate(180deg) drop-shadow(0 0 8px #00ffff); }
       75%  { filter: hue-rotate(270deg) drop-shadow(0 0 8px #ff00ff); }
       100% { filter: hue-rotate(360deg) drop-shadow(0 0 8px #ff0044); }
     }
-    @keyframes nic-cage-pulse {
+    @keyframes tony-pulse {
       0%, 100% { transform: translate(-50%, -50%) scale(1);   }
       50%       { transform: translate(-50%, -50%) scale(1.08); }
     }
@@ -103,7 +103,7 @@ function injectStyles() {
       pointer-events: none;
       z-index: 28;
     }
-    .hud-nic-cage-mode {
+    .hud-tony-mode {
       position: absolute; top: 30%; left: 50%;
       transform: translate(-50%, -50%);
       color: #ff00ff;
@@ -112,8 +112,8 @@ function injectStyles() {
       white-space: nowrap;
       pointer-events: none;
       z-index: 35;
-      animation: nic-cage-rainbow 0.6s linear infinite,
-                 nic-cage-pulse   1.0s ease-in-out infinite;
+      animation: tony-rainbow 0.6s linear infinite,
+                 tony-pulse   1.0s ease-in-out infinite;
     }
   `;
   document.head.appendChild(s);
@@ -148,7 +148,7 @@ export function createHUD(container, gameState) {
 
   const bossLabel = document.createElement('div');
   bossLabel.className = 'hud-boss-label';
-  bossLabel.textContent = '\u2014 CAGE PRIME \u2014';
+  bossLabel.textContent = 'TONY HP';
 
   const bossBarBg   = document.createElement('div');
   bossBarBg.className = 'hud-boss-bar-bg';
@@ -190,7 +190,7 @@ export function createHUD(container, gameState) {
 
   let _msgTimeout   = null;
   let _quoteTimeout = null;
-  let _nicCageEl    = null;
+  let _tonyModeEl    = null;
 
   // ── Public API ───────────────────────────────────────────────────────────
   return {
@@ -208,7 +208,7 @@ export function createHUD(container, gameState) {
       _msgTimeout = setTimeout(() => msg.remove(), duration);
     },
 
-    /** Show a Cage quote in a smaller bar below the message area */
+    /** Show a Tony quote in a smaller bar below the message area */
     showBossQuote(text) {
       hudRoot.querySelector('.hud-quote')?.remove();
       if (_quoteTimeout) { clearTimeout(_quoteTimeout); _quoteTimeout = null; }
@@ -231,17 +231,17 @@ export function createHUD(container, gameState) {
 
     hideBossBar() { bossBarWrap.style.display = 'none'; },
 
-    showNicCageMode() {
-      if (_nicCageEl) return;
-      _nicCageEl = document.createElement('div');
-      _nicCageEl.className = 'hud-nic-cage-mode';
-      _nicCageEl.textContent = '\u26A1 NICOLAS CAGE MODE \u26A1';
-      hudRoot.appendChild(_nicCageEl);
+    showTonyMode() {
+      if (_tonyModeEl) return;
+      _tonyModeEl = document.createElement('div');
+      _tonyModeEl.className = 'hud-tony-mode';
+      _tonyModeEl.textContent = '\uD83D\uDD25 TONY MODE \uD83D\uDD25';
+      hudRoot.appendChild(_tonyModeEl);
     },
 
-    hideNicCageMode() {
-      _nicCageEl?.remove();
-      _nicCageEl = null;
+    hideTonyMode() {
+      _tonyModeEl?.remove();
+      _tonyModeEl = null;
     },
 
     dispose() {

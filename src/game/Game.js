@@ -1,8 +1,9 @@
 /**
- * Main game orchestrator.
+ * Main game orchestrator — INVADER TONY.
  * Owns the Three.js renderer, scene, clock, and the requestAnimationFrame loop.
  * Coordinates all systems: input, audio, particles, entities, HUD.
  * Post-processing: game renders to RenderTarget → shockwave passes → scanlines → screen.
+ * Wave system: 4 progressive waves before the boss.
  */
 
 import * as THREE from 'three';
@@ -15,8 +16,8 @@ import { createAudioManager }   from '../systems/AudioManager.js';
 import { createParticleSystem } from '../systems/ParticleSystem.js';
 import { createPlayer }         from './entities/Player.js';
 import { createBulletPool }     from './entities/Bullet.js';
-import { createCageInvader, disposeInvaderResources, updateInvaderShaderTime } from './entities/CageInvader.js';
-import { createBossCage }       from './entities/BossCage.js';
+import { createTonyInvader, disposeInvaderResources, updateInvaderShaderTime } from './entities/TonyInvader.js';
+import { createBossTony }       from './entities/BossTony.js';
 import { createHUD }            from '../ui/HUD.js';
 
 import scanlinesVert from './shaders/scanlines/scanlines.vert';
@@ -28,14 +29,10 @@ import shockwaveFrag from './shaders/shockwave/shockwave.frag';
 const _pA = new THREE.Vector3();
 const _pB = new THREE.Vector3();
 
-const GRID_COLS        = CONFIG.GRID.COLS;   // 10
-const GRID_ROWS        = CONFIG.GRID.ROWS;   // 4
-const TOTAL_INVADERS   = GRID_COLS * GRID_ROWS;
-const DROP_AMOUNT      = 0.3;
-const EDGE_RIGHT = 5.5;
-const EDGE_LEFT  = -5.5;
-const INVADER_FLOOR_Y  = -6.5;
-const SHOCKWAVE_POOL   = 5;
+const EDGE_RIGHT      = 5.5;
+const EDGE_LEFT       = -5.5;
+const INVADER_FLOOR_Y = -6.5;
+const SHOCKWAVE_POOL  = 5;
 
 /**
  * @param {HTMLCanvasElement} canvas
@@ -49,32 +46,34 @@ export function createGame(canvas, hudElement) {
   let rtPingA, rtPingB;
   let screenScene, screenCamera, screenQuad;
   let scanlinesMaterial;
-  /** @type {{ mat: THREE.ShaderMaterial, active: boolean, progress: number }[]} */
   const shockwavePool = [];
-  let nicCageModeActive = false;
+  let tonyModeActive = false;
 
   // ── Systems ───────────────────────────────────────────────────────────────
   let gameState, inputManager, audioManager, particleSystem, hud;
 
   // ── Entities ──────────────────────────────────────────────────────────────
   let player, playerBullets, enemyBullets;
-  /** @type {ReturnType<typeof createCageInvader>[]} */
   let invaders = [];
-  /** @type {ReturnType<typeof createBossCage> | null} */
   let boss = null;
 
-  // ── Grid movement state ───────────────────────────────────────────────────
+  // ── Grid / wave state ─────────────────────────────────────────────────────
   const grid = {
-    offsetX:    0,
-    offsetY:    0,
-    direction:  1,
-    speed:      CONFIG.ENEMY.BASE_SPEED,
-    shootTimer: 1.0,
+    offsetX:          0,
+    offsetY:          0,
+    direction:        1,
+    speed:            CONFIG.ENEMY.BASE_SPEED,
+    shootTimer:       2.0,
+    speedMultiplier:  1.0,
+    shootIntervalMin: CONFIG.ENEMY.SHOOT_INTERVAL_MIN,
+    shootIntervalMax: CONFIG.ENEMY.SHOOT_INTERVAL_MAX,
+    currentDropAmount: 0.28,
   };
 
-  // ── Loop ──────────────────────────────────────────────────────────────────
-  let animId      = null;
-  let bossSpawned = false;
+  let currentWaveIndex  = 0;
+  let waveTransitioning = false;
+  let animId            = null;
+  let bossSpawned       = false;
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   function makeRenderTarget(w, h) {
@@ -92,13 +91,10 @@ export function createGame(canvas, hudElement) {
     renderer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-
-    // Recreate render targets at new resolution
     rtPingA.dispose();
     rtPingB.dispose();
     rtPingA = makeRenderTarget(w, h);
     rtPingB = makeRenderTarget(w, h);
-
     if (scanlinesMaterial) {
       scanlinesMaterial.uniforms.uResolution.value.set(w, h);
     }
@@ -109,19 +105,13 @@ export function createGame(canvas, hudElement) {
     const w = window.innerWidth;
     const h = window.innerHeight;
 
-    // Renderer
     renderer = new THREE.WebGLRenderer({ canvas, antialias: false, alpha: false });
     renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     renderer.setSize(w, h);
-    renderer.setClearColor(CONFIG.COLORS.BACKGROUND);
+    renderer.setClearColor(0x000000, 1);
+    renderer.sortObjects = true;
 
-    // Camera
-    camera = new THREE.PerspectiveCamera(
-      CONFIG.CANVAS.FOV,
-      w / h,
-      CONFIG.CANVAS.NEAR,
-      CONFIG.CANVAS.FAR,
-    );
+    camera = new THREE.PerspectiveCamera(CONFIG.CANVAS.FOV, w / h, CONFIG.CANVAS.NEAR, CONFIG.CANVAS.FAR);
     camera.position.z = 12;
 
     scene = new THREE.Scene();
@@ -131,20 +121,18 @@ export function createGame(canvas, hudElement) {
     rtPingA = makeRenderTarget(w, h);
     rtPingB = makeRenderTarget(w, h);
 
-    // Orthographic camera + fullscreen quad for post passes
     screenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
     screenScene  = new THREE.Scene();
 
     const quadGeom = new THREE.PlaneGeometry(2, 2);
 
-    // Scanlines material (final composite)
     scanlinesMaterial = new THREE.ShaderMaterial({
       uniforms: {
-        uTexture:    { value: null },
-        uTime:       { value: 0 },
-        uIntensity:  { value: 0.8 },
-        uNicCageMode:{ value: 0 },
-        uResolution: { value: new THREE.Vector2(w, h) },
+        uTexture:     { value: null },
+        uTime:        { value: 0 },
+        uIntensity:   { value: 0.8 },
+        uTonyMode: { value: 0 },
+        uResolution:  { value: new THREE.Vector2(w, h) },
       },
       vertexShader:   scanlinesVert,
       fragmentShader: scanlinesFrag,
@@ -154,7 +142,6 @@ export function createGame(canvas, hudElement) {
     screenQuad = new THREE.Mesh(quadGeom, scanlinesMaterial);
     screenScene.add(screenQuad);
 
-    // Shockwave pool — 5 pre-allocated passes
     for (let i = 0; i < SHOCKWAVE_POOL; i++) {
       shockwavePool.push({
         mat: new THREE.ShaderMaterial({
@@ -174,55 +161,72 @@ export function createGame(canvas, hudElement) {
     }
 
     // Systems
-    gameState     = createGameState();
-    inputManager  = createInputManager(canvas.parentElement);
-    audioManager  = createAudioManager();
+    gameState      = createGameState();
+    inputManager   = createInputManager(canvas.parentElement);
+    audioManager   = createAudioManager();
     particleSystem = createParticleSystem(scene);
-    hud           = createHUD(hudElement, gameState);
+    hud            = createHUD(hudElement, gameState);
 
-    // Bullet pools — pre-allocated, never grows
     playerBullets = createBulletPool(scene, 30, 'player');
     enemyBullets  = createBulletPool(scene, 30, 'enemy');
 
-    // Entities
     player = createPlayer(scene, gameState);
-    spawnGrid();
+
+    // Start with wave 1
+    currentWaveIndex = 0;
+    spawnGrid(CONFIG.WAVES[0]);
+    setTimeout(() => hud.showMessage('WAVE 1', 1500), 300);
 
     window.addEventListener('resize', onResize);
   }
 
   // ── Spawn helpers ─────────────────────────────────────────────────────────
-  function spawnGrid() {
+  function spawnGrid(waveConfig) {
     for (const inv of invaders) inv.dispose();
     invaders = [];
     disposeInvaderResources();
 
-    for (let row = 0; row < GRID_ROWS; row++) {
-      for (let col = 0; col < GRID_COLS; col++) {
-        invaders.push(createCageInvader(scene, { col, row, hSpacing: 1.0, vSpacing: 1.1, topY: 4.5 }));
+    const {
+      cols, rows, enemyTypes,
+      speedMultiplier, shootIntervalMin, shootIntervalMax, dropAmount,
+    } = waveConfig;
+
+    grid.speedMultiplier   = speedMultiplier;
+    grid.shootIntervalMin  = shootIntervalMin;
+    grid.shootIntervalMax  = shootIntervalMax;
+    grid.currentDropAmount = dropAmount;
+    grid.direction         = 1;
+    grid.offsetX           = 0;
+    grid.offsetY           = 0;
+    grid.speed             = CONFIG.ENEMY.BASE_SPEED * speedMultiplier;
+    grid.shootTimer        = 2.0;
+
+    const hSpacing = cols <= 8 ? 1.25 : 1.1;
+    const vSpacing = 1.1;
+    const topY     = 4.2;
+
+    for (let row = 0; row < rows; row++) {
+      const type = enemyTypes[row] || 'basic';
+      for (let col = 0; col < cols; col++) {
+        invaders.push(createTonyInvader(scene, { col, row, type, hSpacing, vSpacing, topY, cols }));
       }
     }
 
-    grid.offsetX   = 0;
-    grid.offsetY   = 0;
-    grid.direction = 1;
-    grid.speed     = CONFIG.ENEMY.BASE_SPEED;
-    grid.shootTimer = 1.0;
-    bossSpawned    = false;
+    bossSpawned = false;
   }
 
   function spawnBoss() {
     bossSpawned = true;
     gameState.transition(STATES.BOSS_FIGHT);
 
-    boss = createBossCage(scene, {
+    boss = createBossTony(scene, {
       enemyBulletPool: enemyBullets,
       particleSystem,
       audioManager,
       hud,
       getPlayerPos:  () => player.getPosition(),
       onShockwave:   (wx, wy) => triggerShockwave(wx, wy),
-      onNicCageMode: () => activateNicCageMode(),
+      onTonyMode: () => activateTonyMode(),
       onDeath:       () => triggerVictory(),
     });
 
@@ -230,37 +234,31 @@ export function createGame(canvas, hudElement) {
   }
 
   // ── Shockwave ─────────────────────────────────────────────────────────────
-  /** Project world-space position to UV, activate a shockwave pass */
   function triggerShockwave(worldX, worldY) {
     const slot = shockwavePool.find(s => !s.active);
     if (!slot) return;
-
-    // Project world → NDC → UV
     _pA.set(worldX, worldY, 0);
     _pA.project(camera);
-    const u = (_pA.x + 1) * 0.5;
-    const v = (_pA.y + 1) * 0.5;
-
     slot.active   = true;
     slot.progress = 0;
-    slot.mat.uniforms.uCenter.value.set(u, v);
+    slot.mat.uniforms.uCenter.value.set((_pA.x + 1) * 0.5, (_pA.y + 1) * 0.5);
     slot.mat.uniforms.uProgress.value = 0;
     slot.mat.uniforms.uStrength.value = 0.35;
   }
 
-  // ── Nicolas Cage Mode ─────────────────────────────────────────────────────
-  function activateNicCageMode() {
-    nicCageModeActive = true;
-    if (scanlinesMaterial) scanlinesMaterial.uniforms.uNicCageMode.value = 1;
-    hud.showNicCageMode();
-    audioManager.startNicCageLoop();
+  // ── Tony Mode ─────────────────────────────────────────────────────────────
+  function activateTonyMode() {
+    tonyModeActive = true;
+    if (scanlinesMaterial) scanlinesMaterial.uniforms.uTonyMode.value = 1;
+    hud.showTonyMode();
+    audioManager.startTonyLoop();
   }
 
-  function deactivateNicCageMode() {
-    nicCageModeActive = false;
-    if (scanlinesMaterial) scanlinesMaterial.uniforms.uNicCageMode.value = 0;
-    hud.hideNicCageMode();
-    audioManager.stopNicCageLoop();
+  function deactivateTonyMode() {
+    tonyModeActive = false;
+    if (scanlinesMaterial) scanlinesMaterial.uniforms.uTonyMode.value = 0;
+    hud.hideTonyMode();
+    audioManager.stopTonyLoop();
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -270,7 +268,7 @@ export function createGame(canvas, hudElement) {
     renderer.clear();
     renderer.render(scene, camera);
 
-    // Pass 2: apply active shockwave passes (ping-pong)
+    // Pass 2: shockwave ping-pong passes
     let src = rtPingA;
     let dst = rtPingB;
 
@@ -279,32 +277,27 @@ export function createGame(canvas, hudElement) {
 
     for (const slot of shockwavePool) {
       if (!slot.active) continue;
-
-      slot.progress += delta * 0.9; // expand speed
+      slot.progress += delta * 0.9;
       if (slot.progress >= 1) { slot.active = false; continue; }
 
       slot.mat.uniforms.uTexture.value  = src.texture;
       slot.mat.uniforms.uProgress.value = slot.progress;
-
       swMesh.material = slot.mat;
       screenScene.add(swMesh);
 
       renderer.setRenderTarget(dst);
       renderer.clear();
       renderer.render(screenScene, screenCamera);
-
       screenScene.remove(swMesh);
 
-      // Swap ping-pong buffers
       const tmp = src; src = dst; dst = tmp;
     }
 
     swMesh.geometry.dispose();
 
-    // Pass 3: scanlines composite → screen
+    // Pass 3: scanlines → screen
     scanlinesMaterial.uniforms.uTexture.value = src.texture;
     scanlinesMaterial.uniforms.uTime.value   += delta;
-
     screenQuad.material = scanlinesMaterial;
     renderer.setRenderTarget(null);
     renderer.clear();
@@ -315,8 +308,7 @@ export function createGame(canvas, hudElement) {
   function loop() {
     animId = requestAnimationFrame(loop);
     let delta = clock.getDelta();
-    if (delta > 0.05) delta = 0.05; // spiral-of-death guard
-
+    if (delta > 0.05) delta = 0.05;
     update(delta);
     renderFrame(delta);
   }
@@ -329,11 +321,9 @@ export function createGame(canvas, hudElement) {
     playerBullets.updateAll(delta);
     enemyBullets.updateAll(delta);
     particleSystem.update(delta);
-    updateInvaderShaderTime(delta);
+    updateInvaderShaderTime(delta); // no-op with sprite approach
 
-    if (state === STATES.PLAYING) {
-      updateGrid(delta);
-    }
+    if (state === STATES.PLAYING) updateGrid(delta);
 
     if (state === STATES.BOSS_FIGHT && boss && boss.alive) {
       boss.update(delta);
@@ -346,7 +336,6 @@ export function createGame(canvas, hudElement) {
 
   // ── Grid movement ─────────────────────────────────────────────────────────
   function updateGrid(delta) {
-    // Collect alive invaders (iterate array once, no filter allocation)
     let aliveCount = 0;
     let maxBaseX   = -Infinity;
     let minBaseX   =  Infinity;
@@ -360,34 +349,31 @@ export function createGame(canvas, hudElement) {
 
     if (aliveCount === 0) return;
 
-    // Speed only starts scaling after 70% of invaders are killed
-    const aliveRatio = aliveCount / TOTAL_INVADERS;
-    const speedMultiplier = aliveRatio > 0.3 ? 1.0 : 1.0 + ((0.3 - aliveRatio) / 0.3) * 3.0;
-    grid.speed = CONFIG.ENEMY.BASE_SPEED * speedMultiplier;
+    // Speed ramps only after 70% of wave is cleared
+    const aliveRatio = aliveCount / invaders.length;
+    const dynamicSpeed = aliveRatio > 0.3
+      ? CONFIG.ENEMY.BASE_SPEED * grid.speedMultiplier
+      : CONFIG.ENEMY.BASE_SPEED * grid.speedMultiplier * (1.0 + ((0.3 - aliveRatio) / 0.3) * 2.5);
+    grid.speed = dynamicSpeed;
 
-    // Move
     grid.offsetX += grid.direction * grid.speed * delta;
 
-    // Edge detection using rightmost/leftmost alive columns
     const rightEdge = maxBaseX + grid.offsetX;
     const leftEdge  = minBaseX + grid.offsetX;
 
     if (rightEdge > EDGE_RIGHT || leftEdge < EDGE_LEFT) {
       grid.direction *= -1;
-      grid.offsetY   -= DROP_AMOUNT;
-      // Nudge back so we don't re-trigger next frame
+      grid.offsetY   -= grid.currentDropAmount;
       grid.offsetX   += grid.direction * 0.05;
     }
 
-    // Apply offset + idle animation to all invaders
     for (const inv of invaders) {
       inv.update(delta, grid.offsetX, grid.offsetY);
     }
 
-    // Random shooting
+    // Random shooting with wave-specific intervals
     grid.shootTimer -= delta;
     if (grid.shootTimer <= 0) {
-      // Pick a random alive invader
       let attempts = 0;
       while (attempts < 10) {
         const idx = Math.floor(Math.random() * invaders.length);
@@ -397,9 +383,9 @@ export function createGame(canvas, hudElement) {
         }
         attempts++;
       }
-      const minInterval = CONFIG.ENEMY.SHOOT_INTERVAL_MIN / 1000;
-      const maxInterval = CONFIG.ENEMY.SHOOT_INTERVAL_MAX / 1000;
-      grid.shootTimer = minInterval + Math.random() * (maxInterval - minInterval);
+      const min = grid.shootIntervalMin / 1000;
+      const max = grid.shootIntervalMax / 1000;
+      grid.shootTimer = min + Math.random() * (max - min);
     }
   }
 
@@ -409,37 +395,33 @@ export function createGame(canvas, hudElement) {
     const pbArr = playerBullets.getActive();
     const ebArr = enemyBullets.getActive();
 
-    // ── Player bullets vs invaders ────────────────────────────────────────
+    // Player bullets vs invaders
     if (state === STATES.PLAYING) {
       for (const pb of pbArr) {
         if (!pb.active) continue;
         _pA.copy(pb.mesh.position);
-
         for (const inv of invaders) {
           if (!inv.alive) continue;
           _pB.copy(inv.mesh.position);
-
-          if (_pA.distanceTo(_pB) < 0.45) {
+          if (_pA.distanceTo(_pB) < 0.5) {
             const pts = inv.takeDamage();
             pb.deactivate();
             gameState.addScore(pts);
             audioManager.playExplosion();
             particleSystem.emit(_pB.x, _pB.y, 0, 12, 0xffaa00, 3.5);
-            break; // one bullet hits one invader
+            break;
           }
         }
       }
     }
 
-    // ── Player bullets vs boss ────────────────────────────────────────────
+    // Player bullets vs boss
     if (state === STATES.BOSS_FIGHT && boss && boss.alive) {
       _pB.copy(boss.mesh.position);
-
       for (const pb of pbArr) {
         if (!pb.active) continue;
         _pA.copy(pb.mesh.position);
-
-        if (_pA.distanceTo(_pB) < 1.5) {
+        if (_pA.distanceTo(_pB) < 2.0) {
           boss.takeDamage();
           pb.deactivate();
           gameState.addScore(50);
@@ -447,13 +429,11 @@ export function createGame(canvas, hudElement) {
       }
     }
 
-    // ── Enemy bullets vs player ───────────────────────────────────────────
+    // Enemy bullets vs player
     _pB.copy(player.getPosition());
-
     for (const eb of ebArr) {
       if (!eb.active) continue;
       _pA.copy(eb.mesh.position);
-
       if (_pA.distanceTo(_pB) < 0.5) {
         eb.deactivate();
         player.takeDamage(audioManager);
@@ -467,11 +447,10 @@ export function createGame(canvas, hudElement) {
     const state = gameState.current;
     if (state === STATES.GAME_OVER || state === STATES.VICTORY) return;
 
-    // Player out of lives
     if (gameState.lives <= 0) { triggerGameOver(); return; }
 
     if (state === STATES.PLAYING) {
-      // Invaders reached the player floor
+      // Invaders reached the floor
       for (const inv of invaders) {
         if (inv.alive && inv.mesh.position.y < INVADER_FLOOR_Y) {
           triggerGameOver();
@@ -479,36 +458,54 @@ export function createGame(canvas, hudElement) {
         }
       }
 
-      // All invaders dead → boss wave
+      // Count alive invaders
       let alive = 0;
       for (const inv of invaders) { if (inv.alive) alive++; }
-      if (alive === 0 && !bossSpawned) {
-        spawnBoss();
+
+      if (alive === 0 && !waveTransitioning && !bossSpawned) {
+        waveTransitioning = true;
+
+        if (currentWaveIndex < CONFIG.WAVES.length - 1) {
+          // Advance to next wave
+          currentWaveIndex++;
+          const nextWave = CONFIG.WAVES[currentWaveIndex];
+          hud.showMessage(nextWave.label, 2000);
+          audioManager.playWaveClear();
+          setTimeout(() => {
+            spawnGrid(nextWave);
+            waveTransitioning = false;
+            gameState.transition(STATES.PLAYING);
+          }, 2200);
+        } else {
+          // All 4 waves cleared → boss
+          spawnBoss();
+          waveTransitioning = false;
+        }
       }
     }
-    // Note: Boss death is handled by the onDeath callback → triggerVictory()
+    // Boss death → triggerVictory() via onDeath callback
   }
 
   function triggerGameOver() {
     if (gameState.current === STATES.GAME_OVER) return;
     gameState.transition(STATES.GAME_OVER);
-    if (nicCageModeActive) deactivateNicCageMode();
+    if (tonyModeActive) deactivateTonyMode();
     audioManager.playGameOver();
     hud.showMessage('GAME OVER', 1800);
-    sessionStorage.setItem('cage_invaders_final_score', String(gameState.score));
-    sessionStorage.setItem('cage_invaders_result', 'game_over');
+    sessionStorage.setItem('tony_invaders_final_score', String(gameState.score));
+    sessionStorage.setItem('tony_invaders_result', 'game_over');
     setTimeout(() => navigate('#end'), 1800);
   }
 
   function triggerVictory() {
     if (gameState.current === STATES.VICTORY) return;
     gameState.transition(STATES.VICTORY);
-    if (nicCageModeActive) deactivateNicCageMode();
+    if (tonyModeActive) deactivateTonyMode();
     audioManager.playVictory();
     hud.showMessage('YOU WIN!', 1800);
     hud.hideBossBar();
-    sessionStorage.setItem('cage_invaders_final_score', String(gameState.score));
-    sessionStorage.setItem('cage_invaders_result', 'victory');
+    sessionStorage.setItem('tony_invaders_final_score', String(gameState.score));
+    sessionStorage.setItem('tony_invaders_result', 'victory');
     setTimeout(() => navigate('#end'), 1800);
   }
 
@@ -545,7 +542,6 @@ export function createGame(canvas, hudElement) {
 
       hud?.dispose();
 
-      // Post-processing cleanup
       rtPingA?.dispose();
       rtPingB?.dispose();
       scanlinesMaterial?.dispose();

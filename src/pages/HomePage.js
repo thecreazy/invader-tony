@@ -45,17 +45,18 @@ const MENU_ITEMS = [
   { label: 'HIGH SCORES', route: '#leaderboard' },
 ];
 
-const ASCII_ART = `░░░░░░░░░░░░░░░░░░░░░░░
-░░░▄████████████████▄░░░
-░░██▀░░░░░░░░░░░░░▀██░░
-░░██░░▄▄░░░░░░▄▄░░██░░
-░░██░░██░░░░░░██░░██░░
-░░██░░▀▀░▄██▄░▀▀░░██░░
-░░██░░░░░▀██▀░░░░░██░░
-░░██░░░░░░░░░░░░░░██░░
-░░██░▄░░░░░░░░░░░▄██░░
-░░░▀████████████████▀░░░
-░░░░░░░░░░░░░░░░░░░░░░░`;
+const ASCII_ART = `▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+█ ▄▄▄▄  ▄▄  ▄  ▄  ▄  ▀█
+█ █  █  █ █ █  █  █  ▄█
+█ █  █  █ █ █  █  ████
+█ █  █  ██  ██ █  █  ▀█
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
+█▄ ██ ▄█ ▄▄  ▄  ██  █ █
+█  ██  █ █ █  █  █  █ █
+█  ██  █ ██   █  █████
+█  ▀▀  █ █ █ ██  █  █ █
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀`;
 
 const GLITCH_CHARS = ['█', '▓', '▒', '▀', '▄'];
 const STYLE_ID = 'home-page-styles';
@@ -187,7 +188,7 @@ function injectStyles() {
       margin-bottom: 16px;
     }
 
-    .home-title-cage {
+    .home-title-line1 {
       color: var(--color-cyan);
       font-size: clamp(28px, 6vw, 52px);
       line-height: 1.1;
@@ -432,13 +433,13 @@ function buildDOM() {
   insertCoin.textContent = 'INSERT COIN';
 
   // B — Title
-  const titleCage = document.createElement('div');
-  titleCage.className = 'home-title-cage';
-  titleCage.textContent = 'CAGE';
+  const titleLine1 = document.createElement('div');
+  titleLine1.className = 'home-title-line1';
+  titleLine1.textContent = 'INVADER';
 
   const titleInvaders = document.createElement('div');
   titleInvaders.className = 'home-title-invaders';
-  titleInvaders.textContent = 'INVADERS';
+  titleInvaders.textContent = 'TONY';
 
   const sep = document.createElement('div');
   sep.className = 'home-title-sep';
@@ -479,7 +480,7 @@ function buildDOM() {
 
   const bleft = document.createElement('span');
   bleft.className = 'home-bottom-left';
-  bleft.textContent = '\u00A9 1994 CAGE CORP';
+  bleft.textContent = '\u00A9 1994 TONY CORP';
 
   const bcenter = document.createElement('span');
   bcenter.className = 'home-bottom-center';
@@ -512,7 +513,7 @@ function buildDOM() {
 
   // Assemble
   content.appendChild(insertCoin);
-  content.appendChild(titleCage);
+  content.appendChild(titleLine1);
   content.appendChild(titleInvaders);
   content.appendChild(sep);
   content.appendChild(asciiEl);

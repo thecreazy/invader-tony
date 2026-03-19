@@ -1,11 +1,11 @@
 // scanlines.frag — full CRT post-processing pass
 // Effects: barrel distortion, scanlines, vignette, film grain,
-//          chromatic aberration, Nicolas Cage Mode.
+//          chromatic aberration, Tony Mode.
 
 uniform sampler2D uTexture;
 uniform float     uTime;
 uniform float     uIntensity;
-uniform float     uNicCageMode;
+uniform float     uTonyMode;
 uniform vec2      uResolution;
 
 varying vec2 vUv;
@@ -62,8 +62,8 @@ void main() {
   float grain = rand(vUv + fract(uTime * 0.31));
   col.rgb    += (grain - 0.5) * 0.04 * uIntensity;
 
-  // ── Nicolas Cage Mode ─────────────────────────────────────────────────────
-  if (uNicCageMode > 0.5) {
+  // ── Tony Mode ─────────────────────────────────────────────────────────────
+  if (uTonyMode > 0.5) {
     col.rgb = hueShift(col.rgb, uTime * 2.0);
 
     // Extreme chromatic aberration

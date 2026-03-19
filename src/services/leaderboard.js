@@ -4,7 +4,7 @@
  * by changing only this file.
  */
 
-const STORAGE_KEY = 'cage_invaders_scores';
+const STORAGE_KEY = 'tony_invaders_scores';
 const MAX_ENTRIES = 10;
 
 /**

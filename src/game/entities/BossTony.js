@@ -1,36 +1,32 @@
 /**
- * BossCage entity — the final boss, a giant Nicolas Cage head.
+ * BossTony entity — the final boss, a giant Tony sprite.
  * Three HP phases: increasing speed, glitch, and bullet hell patterns.
  * Handles its own entry animation, phase transitions, and death sequence.
- *
- * Visuals: SphereGeometry head mass + BoxGeometry face screen (CanvasTexture).
- * Phase 2 swaps to a VHS-glitch variant of the texture.
  */
 
 import * as THREE from 'three';
 import { CONFIG } from '../../config.js';
-import { generateCageTexture, generateCageTextureGlitch } from '../CageTexture.js';
 
 const BOSS_HP  = CONFIG.BOSS.HP;
 const [P1, P2] = CONFIG.BOSS.PHASES;
 const SCALE    = 3.0;
 
-// ── Cage quotes per phase ─────────────────────────────────────────────────────
+// ── Tony Pitony quotes per phase ──────────────────────────────────────────────
 const QUOTES = [
   [
-    "I'M GONNA STEAL THE\nDECLARATION OF INDEPENDENCE",
-    'NOT THE BEES!',
-    "HOW'D IT GET BURNED?",
+    'DONNE RICCHE!',
+    'CULO!',
+    'SONO IL RE!',
   ],
   [
-    'YOU DON\'T SAY.',
-    'I AM A VAMPIRE!',
-    'WICKER MAN WAS MY MASTERPIECE',
+    'NON ME NE IMPORTA!',
+    'SIRACUSA IN THE BUILDING!',
+    'TONY NON SI FERMA!',
   ],
   [
-    'AAAAAAAAAHHHHH!!!',
-    'I WILL EAT YOUR SOUL',
-    'FACE... OFF!',
+    'AAAAAAAHHHH!!!',
+    "TONY PITONY NON E' UNA PERSONA!",
+    "E' UN PENSIERO INTRUSIVO!",
   ],
 ];
 
@@ -43,49 +39,39 @@ const QUOTES = [
  *   hud: object,
  *   getPlayerPos: () => THREE.Vector3,
  *   onShockwave: (x: number, y: number) => void,
- *   onNicCageMode: () => void,
+ *   onTonyMode: () => void,
  *   onDeath: () => void,
  * }} opts
  */
-export function createBossCage(scene, opts) {
+export function createBossTony(scene, opts) {
   const {
     enemyBulletPool, particleSystem, audioManager, hud,
-    getPlayerPos, onShockwave, onNicCageMode, onDeath,
+    getPlayerPos, onShockwave, onTonyMode, onDeath,
   } = opts;
 
-  // ── Geometry ──────────────────────────────────────────────────────────────
-  const headMassGeom = new THREE.SphereGeometry(1.5, 12, 12);
-  const faceBoxGeom  = new THREE.BoxGeometry(2.8, 2.8, 0.3);
-  const glowGeom     = new THREE.SphereGeometry(1.5 + 0.25, 10, 10);
+  // ── Texture & geometry ────────────────────────────────────────────────────
+  const bossTexture = new THREE.TextureLoader().load('/assets/tony_boss.png');
+  bossTexture.magFilter = THREE.NearestFilter;
+  bossTexture.minFilter = THREE.NearestFilter;
 
-  // ── Materials & textures ──────────────────────────────────────────────────
-  const headMassMat = new THREE.MeshBasicMaterial({ color: 0x5a2d0c });
-  const glowMat     = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.12 });
+  const geom = new THREE.PlaneGeometry(3.5, 4.0);
+  const mat  = new THREE.MeshBasicMaterial({
+    map:         bossTexture,
+    transparent: true,
+    alphaTest:   0.1,
+    depthWrite:  false,
+  });
+  const faceMesh = new THREE.Mesh(geom, mat);
 
-  let _normalTex = generateCageTexture(256);
-  let _glitchTex = null; // generated lazily at phase 2
+  // Glow halo
+  const glowGeom = new THREE.SphereGeometry(2.2, 10, 10);
+  const glowMat  = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.10 });
+  const glowMesh = new THREE.Mesh(glowGeom, glowMat);
+  glowMesh.position.z = -0.5;
 
-  const faceMat = new THREE.MeshBasicMaterial({ map: _normalTex });
-
-  // ── Group assembly ────────────────────────────────────────────────────────
   const group = new THREE.Group();
-
-  // Glow halo (behind head mass)
-  const glowSphere = new THREE.Mesh(glowGeom, glowMat);
-  glowSphere.position.z = -0.1;
-  group.add(glowSphere);
-
-  // Head mass (sphere, dark brown)
-  const headMass = new THREE.Mesh(headMassGeom, headMassMat);
-  headMass.scale.set(1, 0.9, 0.65);
-  group.add(headMass);
-
-  // Face screen (textured box in front of sphere)
-  const faceMesh = new THREE.Mesh(faceBoxGeom, faceMat);
-  faceMesh.position.z = 0.9;
+  group.add(glowMesh);
   group.add(faceMesh);
-
-  // Start above screen; entry animation slides it down
   group.position.set(0, 8, 0);
   scene.add(group);
 
@@ -101,8 +87,9 @@ export function createBossCage(scene, opts) {
   let quoteTimer    = 4.0;
   let ncModeActive  = false;
   let _dying        = false;
+  let _glitchInterval = null;
 
-  // ── Quote interval ────────────────────────────────────────────────────────
+  // ── Quote helpers ─────────────────────────────────────────────────────────
   function showRandomQuote() {
     const pool = QUOTES[phase] ?? QUOTES[0];
     hud.showBossQuote(pool[Math.floor(Math.random() * pool.length)]);
@@ -112,24 +99,25 @@ export function createBossCage(scene, opts) {
   function setPhase(p) {
     phase = p;
 
-    if (p === 1) hud.showMessage("HE'S GETTING ANGRY...", 2200);
-    if (p === 2) hud.showMessage("YOU DON'T SAY?!", 2200);
+    if (p === 1) hud.showMessage("TONY SI INCAZZA...", 2200);
+    if (p === 2) hud.showMessage("PENSIERO INTRUSIVO!", 2200);
 
-    // 5 shockwaves burst at phase transition
     for (let i = 0; i < 5; i++) {
       const jx = group.position.x + (Math.random() - 0.5) * 2;
       const jy = group.position.y + (Math.random() - 0.5) * 2;
       setTimeout(() => onShockwave(jx, jy), i * 80);
     }
 
-    // Nicolas Cage Mode + glitch texture at phase 2
     if (p === 2 && !ncModeActive) {
       ncModeActive = true;
-      onNicCageMode();
+      onTonyMode();
 
-      if (!_glitchTex) _glitchTex = generateCageTextureGlitch(256);
-      faceMat.map = _glitchTex;
-      faceMat.needsUpdate = true;
+      // Phase 2: rapid colour glitch on the sprite
+      let _glitchToggle = false;
+      _glitchInterval = setInterval(() => {
+        _glitchToggle = !_glitchToggle;
+        mat.color.set(_glitchToggle ? 0xff0044 : 0xffffff);
+      }, 80);
     }
   }
 
@@ -211,6 +199,7 @@ export function createBossCage(scene, opts) {
   function die() {
     _dying = true;
     _alive = false;
+    if (_glitchInterval) { clearInterval(_glitchInterval); _glitchInterval = null; }
     group.visible = false;
 
     for (let i = 0; i < 10; i++) {
@@ -273,14 +262,10 @@ export function createBossCage(scene, opts) {
       if (!_alive || _dying) return;
       hp--;
 
-      // White flash
-      const normalMat = faceMesh.material;
-      faceMesh.material = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      setTimeout(() => {
-        if (_alive) {
-          faceMesh.material = normalMat;
-        }
-      }, 80);
+      // White flash (don't override glitch interval colour — just a quick swap)
+      const prevColor = mat.color.getHex();
+      mat.color.set(0xffffff);
+      setTimeout(() => { if (_alive) mat.color.set(prevColor); }, 80);
 
       audioManager.playBossHit();
       particleSystem.emit(group.position.x, group.position.y, 0, 8, 0xff4400, 3);
@@ -294,15 +279,13 @@ export function createBossCage(scene, opts) {
     },
 
     dispose() {
+      if (_glitchInterval) { clearInterval(_glitchInterval); _glitchInterval = null; }
       scene.remove(group);
-      headMassGeom.dispose();
-      faceBoxGeom.dispose();
+      geom.dispose();
       glowGeom.dispose();
-      headMassMat.dispose();
-      faceMat.dispose();
+      mat.dispose();
       glowMat.dispose();
-      _normalTex.dispose();
-      _glitchTex?.dispose();
+      bossTexture.dispose();
     },
   };
 }

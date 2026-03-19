@@ -1,8 +1,8 @@
-# Cage Invaders — Claude Code Context
+# INVADER TONY — Claude Code Context
 
 ## Project Overview
 
-A Space Invaders clone featuring Nicholas Cage as the enemy aliens.
+A Space Invaders clone featuring Tony Pitony as the enemy aliens.
 Built with Vite + vanilla JS + Three.js (only for the game canvas and visual effects).
 The rest of the UI (menus, leaderboard) is pure HTML/CSS.
 
@@ -52,7 +52,7 @@ The rest of the UI (menus, leaderboard) is pure HTML/CSS.
 
 ## Shader Files
 
-- .vert and .frag files in src/shaders/
+- .vert and .frag files in src/game/shaders/
 - Imported as strings via vite-plugin-glsl
 - Each shader has its own subfolder with vertex + fragment
 

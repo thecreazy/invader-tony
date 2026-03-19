@@ -7,7 +7,7 @@
 export function createAudioManager() {
   let ctx    = null;
   let master = null;
-  let _nicCageOscLoop = null; // for NicCageMode ascending loop
+  let _tonyOscLoop = null; // for Tony Mode ascending loop
 
   function ensureCtx() {
     if (ctx) return;
@@ -115,8 +115,13 @@ export function createAudioManager() {
       scheduleTones([523, 659, 784, 1047, 1318], 'sine', 0.10, 0.10);
     },
 
-    /** Repeating ascending fanfare loop for NicCageMode — call once, then stop with stopNicCageLoop */
-    startNicCageLoop() {
+    /** Ascending 3-note fanfare for wave clear: C5 → E5 → G5 */
+    playWaveClear() {
+      scheduleTones([523, 659, 784], 'sine', 0.12, 0.16, 0.5);
+    },
+
+    /** Repeating ascending fanfare loop for Tony Mode — call once, then stop with stopTonyLoop */
+    startTonyLoop() {
       try {
         ensureCtx();
         const freqs = [261, 329, 392, 523, 659, 784, 1047];
@@ -137,18 +142,18 @@ export function createAudioManager() {
             osc.stop(t + 0.07);
           });
           offset += freqs.length * 0.07 + 0.2;
-          _nicCageOscLoop = setTimeout(scheduleNext, (freqs.length * 0.07 + 0.2) * 1000);
+          _tonyOscLoop = setTimeout(scheduleNext, (freqs.length * 0.07 + 0.2) * 1000);
         };
         scheduleNext();
       } catch (_) {}
     },
 
-    stopNicCageLoop() {
-      if (_nicCageOscLoop) { clearTimeout(_nicCageOscLoop); _nicCageOscLoop = null; }
+    stopTonyLoop() {
+      if (_tonyOscLoop) { clearTimeout(_tonyOscLoop); _tonyOscLoop = null; }
     },
 
     destroy() {
-      this.stopNicCageLoop();
+      this.stopTonyLoop();
       if (ctx) { ctx.close().catch(() => {}); ctx = null; }
     },
   };

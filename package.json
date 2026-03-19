@@ -1,7 +1,7 @@
 {
-  "name": "cage-invaders",
+  "name": "invadertony",
   "version": "0.1.0",
-  "description": "Space Invaders clone featuring Nicholas Cage as the alien enemy",
+  "description": "Space Invaders clone featuring Tony Pitony as the alien enemy",
   "type": "module",
   "scripts": {
     "dev": "vite",

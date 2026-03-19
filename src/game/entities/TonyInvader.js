@@ -8,6 +8,8 @@
 
 import * as THREE from 'three';
 import { CONFIG } from '../../config.js';
+import dissolveVert from '../shaders/dissolve/dissolve.vert';
+import dissolveFrag from '../shaders/dissolve/dissolve.frag';
 
 // ── Shared textures (loaded once) ─────────────────────────────────────────────
 
@@ -83,7 +85,10 @@ export function createTonyInvader(scene, {
   // Score value: elite worth more; front rows worth less
   const scoreValue = type === 'elite' ? 30 : 10;
 
-  let _flashTimeout = null;
+  let _flashTimeout   = null;
+  let isDissolving    = false;
+  let dissolveProgress = 0;
+  let dissolveMat     = null;
 
   return {
     get alive() { return alive; },
@@ -94,6 +99,20 @@ export function createTonyInvader(scene, {
 
     /** @param {number} delta @param {number} offsetX @param {number} offsetY */
     update(delta, offsetX, offsetY) {
+      // Dissolve animation runs even after alive = false
+      if (isDissolving) {
+        dissolveProgress = Math.min(1.0, dissolveProgress + delta * 2.5);
+        dissolveMat.uniforms.uProgress.value = dissolveProgress;
+        dissolveMat.uniforms.uTime.value     += delta;
+        if (dissolveProgress >= 1.0) {
+          mesh.visible = false;
+          isDissolving = false;
+          dissolveMat.dispose();
+          dissolveMat = null;
+          scene.remove(mesh);
+        }
+        return;
+      }
       if (!alive) return;
       time += delta;
       mesh.position.x = baseX + offsetX;
@@ -115,18 +134,32 @@ export function createTonyInvader(scene, {
 
     /** @returns {number} score value */
     takeDamage() {
+      if (!alive) return 0;
       alive = false;
-      // White flash before hiding
-      mat.color.set(0xffffff);
-      _flashTimeout = setTimeout(() => {
-        mesh.visible = false;
-        _flashTimeout = null;
-      }, 100);
+      if (_flashTimeout) { clearTimeout(_flashTimeout); _flashTimeout = null; }
+
+      // Start pixel-dissolve death animation
+      isDissolving    = true;
+      dissolveProgress = 0;
+      dissolveMat = new THREE.ShaderMaterial({
+        uniforms: {
+          uTexture:  { value: getTexture(type) },
+          uProgress: { value: 0.0 },
+          uTime:     { value: 0.0 },
+        },
+        vertexShader:   dissolveVert,
+        fragmentShader: dissolveFrag,
+        transparent: true,
+        depthWrite:  false,
+      });
+      mesh.material = dissolveMat;
+
       return scoreValue;
     },
 
     dispose() {
       if (_flashTimeout) { clearTimeout(_flashTimeout); _flashTimeout = null; }
+      if (dissolveMat)   { dissolveMat.dispose(); dissolveMat = null; isDissolving = false; }
       scene.remove(mesh);
       geom.dispose();
       mat.dispose();

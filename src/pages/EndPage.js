@@ -41,7 +41,6 @@ function injectStyles() {
     .end-root {
       position: fixed;
       inset: 0;
-      background: #000;
       font-family: 'Press Start 2P', monospace;
       display: flex;
       flex-direction: column;

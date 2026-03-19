@@ -2,7 +2,8 @@
  * Game page — mounts the Three.js canvas and HTML HUD, then boots the game.
  */
 
-import { createGame } from '../game/Game.js';
+import { createGame }      from '../game/Game.js';
+import { pause, resume }   from '../background/BackgroundRenderer.js';
 
 /** @type {HTMLElement | null} */
 let _container = null;
@@ -26,7 +27,6 @@ export function mount(container) {
     width: 100vw;
     height: 100vh;
     overflow: hidden;
-    background: #000;
   `;
 
   // Three.js render target
@@ -43,12 +43,16 @@ export function mount(container) {
   _wrapper.appendChild(hudEl);
   _container.appendChild(_wrapper);
 
+  pause(); // background renderer not needed — game has its own starfield
+
   _game = createGame(canvas, hudEl);
   _game.init();
   _game.start();
 }
 
 export function unmount() {
+  resume(); // restore background starfield for non-game pages
+
   _game?.destroy();
   _game = null;
 

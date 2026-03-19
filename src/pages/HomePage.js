@@ -133,7 +133,6 @@ function injectStyles() {
     .home-root {
       position: fixed;
       inset: 0;
-      background: var(--color-bg);
       font-family: 'Press Start 2P', monospace;
       animation: crt-power-on 320ms ease-out forwards,
                  home-fade-in 600ms ease-out forwards;
@@ -274,7 +273,7 @@ function injectStyles() {
     .home-portrait-overlay {
       position: fixed;
       inset: 0;
-      background: var(--color-bg);
+      background: rgba(0, 0, 0, 0.92);
       z-index: 200;
       display: none;
       flex-direction: column;

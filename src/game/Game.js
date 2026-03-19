@@ -20,10 +20,12 @@ import { createTonyInvader, disposeInvaderResources, updateInvaderShaderTime } f
 import { createBossTony }       from './entities/BossTony.js';
 import { createHUD }            from '../ui/HUD.js';
 
-import scanlinesVert from './shaders/scanlines/scanlines.vert';
-import scanlinesFrag from './shaders/scanlines/scanlines.frag';
-import shockwaveVert from './shaders/shockwave/shockwave.vert';
-import shockwaveFrag from './shaders/shockwave/shockwave.frag';
+import scanlinesVert  from './shaders/scanlines/scanlines.vert';
+import scanlinesFrag  from './shaders/scanlines/scanlines.frag';
+import shockwaveVert  from './shaders/shockwave/shockwave.vert';
+import shockwaveFrag  from './shaders/shockwave/shockwave.frag';
+import starfieldVert  from './shaders/starfield/starfield.vert';
+import starfieldFrag  from './shaders/starfield/starfield.frag';
 
 // Pre-allocated vectors for collision detection — never new'd in the game loop
 const _pA = new THREE.Vector3();
@@ -48,6 +50,11 @@ export function createGame(canvas, hudElement) {
   let scanlinesMaterial;
   const shockwavePool = [];
   let tonyModeActive = false;
+
+  // ── Shader effects state ───────────────────────────────────────────────────
+  let starfieldMaterial = null;
+  let starfieldMesh     = null;
+  let warpTimer         = 0;
 
   // ── Systems ───────────────────────────────────────────────────────────────
   let gameState, inputManager, audioManager, particleSystem, hud;
@@ -117,6 +124,18 @@ export function createGame(canvas, hudElement) {
     scene = new THREE.Scene();
     clock = new THREE.Clock();
 
+    // ── Starfield background ──────────────────────────────────────────────
+    starfieldMaterial = new THREE.ShaderMaterial({
+      uniforms:       { uTime: { value: 0 } },
+      vertexShader:   starfieldVert,
+      fragmentShader: starfieldFrag,
+      depthWrite:     false,
+    });
+    starfieldMesh = new THREE.Mesh(new THREE.PlaneGeometry(50, 30), starfieldMaterial);
+    starfieldMesh.position.z = -5;
+    starfieldMesh.renderOrder = -1;
+    scene.add(starfieldMesh);
+
     // ── Post-processing setup ─────────────────────────────────────────────
     rtPingA = makeRenderTarget(w, h);
     rtPingB = makeRenderTarget(w, h);
@@ -128,11 +147,14 @@ export function createGame(canvas, hudElement) {
 
     scanlinesMaterial = new THREE.ShaderMaterial({
       uniforms: {
-        uTexture:     { value: null },
-        uTime:        { value: 0 },
-        uIntensity:   { value: 0.8 },
-        uTonyMode: { value: 0 },
-        uResolution:  { value: new THREE.Vector2(w, h) },
+        uTexture:             { value: null },
+        uTime:                { value: 0 },
+        uIntensity:           { value: 0.8 },
+        uTonyMode:            { value: 0 },
+        uResolution:          { value: new THREE.Vector2(w, h) },
+        uChromaticAberration: { value: 0.001 },
+        uDamageFlash:         { value: 0.0 },
+        uWarpIntensity:       { value: 0.0 },
       },
       vertexShader:   scanlinesVert,
       fragmentShader: scanlinesFrag,
@@ -170,7 +192,7 @@ export function createGame(canvas, hudElement) {
     playerBullets = createBulletPool(scene, 30, 'player');
     enemyBullets  = createBulletPool(scene, 30, 'enemy');
 
-    player = createPlayer(scene, gameState);
+    player = createPlayer(scene, gameState, { onDamage: () => triggerDamageFlash() });
 
     // Start with wave 1
     currentWaveIndex = 0;
@@ -246,6 +268,35 @@ export function createGame(canvas, hudElement) {
     slot.mat.uniforms.uStrength.value = 0.35;
   }
 
+  // ── Damage flash ──────────────────────────────────────────────────────────
+  function triggerDamageFlash() {
+    if (scanlinesMaterial) scanlinesMaterial.uniforms.uDamageFlash.value = 1.0;
+  }
+
+  // ── Always-on effect updates (run every frame regardless of game state) ────
+  function updateEffects(delta) {
+    if (!scanlinesMaterial) return;
+    const u = scanlinesMaterial.uniforms;
+
+    // Fade damage flash
+    if (u.uDamageFlash.value > 0)
+      u.uDamageFlash.value = Math.max(0, u.uDamageFlash.value - delta * 3.3);
+
+    // Fade warp
+    if (warpTimer > 0) {
+      warpTimer = Math.max(0, warpTimer - delta * 1.25);
+      u.uWarpIntensity.value = warpTimer;
+    }
+
+    // Boss chromatic aberration — ramps up as HP decreases
+    const state = gameState.current;
+    if (state === STATES.BOSS_FIGHT && boss && boss.alive) {
+      u.uChromaticAberration.value = (1.0 - boss.hp / CONFIG.BOSS.HP) * 0.008 + 0.001;
+    } else {
+      u.uChromaticAberration.value = 0.001;
+    }
+  }
+
   // ── Tony Mode ─────────────────────────────────────────────────────────────
   function activateTonyMode() {
     tonyModeActive = true;
@@ -263,6 +314,8 @@ export function createGame(canvas, hudElement) {
 
   // ── Render ────────────────────────────────────────────────────────────────
   function renderFrame(delta) {
+    if (starfieldMaterial) starfieldMaterial.uniforms.uTime.value += delta;
+
     // Pass 1: render game scene to rtPingA
     renderer.setRenderTarget(rtPingA);
     renderer.clear();
@@ -310,6 +363,7 @@ export function createGame(canvas, hudElement) {
     let delta = clock.getDelta();
     if (delta > 0.05) delta = 0.05;
     update(delta);
+    updateEffects(delta);
     renderFrame(delta);
   }
 
@@ -471,6 +525,8 @@ export function createGame(canvas, hudElement) {
           const nextWave = CONFIG.WAVES[currentWaveIndex];
           hud.showMessage(nextWave.label, 2000);
           audioManager.playWaveClear();
+          warpTimer = 1.0;
+          if (scanlinesMaterial) scanlinesMaterial.uniforms.uWarpIntensity.value = 1.0;
           setTimeout(() => {
             spawnGrid(nextWave);
             waveTransitioning = false;
@@ -547,6 +603,9 @@ export function createGame(canvas, hudElement) {
       scanlinesMaterial?.dispose();
       for (const slot of shockwavePool) slot.mat.dispose();
       screenQuad?.geometry.dispose();
+
+      starfieldMesh?.geometry.dispose();
+      starfieldMaterial?.dispose();
 
       renderer?.dispose();
     },

@@ -21,7 +21,7 @@ const _red   = new THREE.Color(0xff4400);
  * @param {THREE.Scene} scene
  * @param {import('../GameState.js').ReturnType<createGameState>} gameState
  */
-export function createPlayer(scene, gameState) {
+export function createPlayer(scene, gameState, { onDamage } = {}) {
   // ── Geometry ──────────────────────────────────────────────────────────────
   const hullGeom   = new THREE.BoxGeometry(0.8, 0.4, 0.1);
   const wingGeom   = new THREE.BoxGeometry(0.5, 0.15, 0.1);
@@ -126,7 +126,8 @@ export function createPlayer(scene, gameState) {
       invTimer   = INVINCIBLE_DUR;
       mat.color.copy(_white);
       gameState.loseLife();
-      if (audio) audio.playHit();
+      if (audio)    audio.playHit();
+      if (onDamage) onDamage();
     },
 
     dispose() {

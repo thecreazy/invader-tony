@@ -1,12 +1,16 @@
 // scanlines.frag — full CRT post-processing pass
-// Effects: barrel distortion, scanlines, vignette, film grain,
-//          chromatic aberration, Tony Mode.
+// Effects: barrel distortion, warp, scanlines, vignette, film grain,
+//          chromatic aberration (boss-reactive), Tony Mode,
+//          damage flash, wave-transition warp.
 
 uniform sampler2D uTexture;
 uniform float     uTime;
 uniform float     uIntensity;
 uniform float     uTonyMode;
 uniform vec2      uResolution;
+uniform float     uChromaticAberration; // 0.001 baseline → 0.009 at boss death
+uniform float     uDamageFlash;         // 0.0–1.0, fades to 0 after player hit
+uniform float     uWarpIntensity;       // 0.0–1.0, wave transition warp
 
 varying vec2 vUv;
 
@@ -23,8 +27,19 @@ float rand(vec2 co) {
 }
 
 void main() {
+  // ── Wave-transition warp ───────────────────────────────────────────────────
+  // Applied to the base UV before barrel distortion.
+  vec2 baseUv = vUv;
+  if (uWarpIntensity > 0.0) {
+    vec2  dir  = vUv - 0.5;
+    float dist = length(dir);
+    float warp = uWarpIntensity * 0.15 * (1.0 - dist);
+    baseUv = vUv + dir * warp * sin(uTime * 15.0 + dist * 20.0);
+    baseUv = clamp(baseUv, 0.0, 1.0);
+  }
+
   // ── Barrel distortion ─────────────────────────────────────────────────────
-  vec2  cuv    = vUv - 0.5;
+  vec2  cuv    = baseUv - 0.5;
   float barrel = dot(cuv, cuv) * 0.06 * uIntensity;
   cuv *= 1.0 + barrel;
   cuv += 0.5;
@@ -32,11 +47,11 @@ void main() {
   float inBounds = step(0.0, cuv.x) * step(cuv.x, 1.0)
                  * step(0.0, cuv.y) * step(cuv.y, 1.0);
 
-  vec2 sampleUV = mix(vUv, cuv, uIntensity * 0.65);
+  vec2 sampleUV = mix(baseUv, cuv, uIntensity * 0.65);
 
-  // ── Chromatic aberration (stronger near edges) ────────────────────────────
+  // ── Chromatic aberration (boss-reactive via uChromaticAberration) ──────────
   float edgeDist = length(vUv - 0.5);
-  vec2  caOff    = vec2(0.001 + edgeDist * 0.003, 0.0);
+  vec2  caOff    = vec2(uChromaticAberration + edgeDist * 0.003, 0.0);
 
   vec4 col;
   col.r = texture2D(uTexture, clamp(sampleUV + caOff, 0.0, 1.0)).r;
@@ -66,21 +81,22 @@ void main() {
   if (uTonyMode > 0.5) {
     col.rgb = hueShift(col.rgb, uTime * 2.0);
 
-    // Extreme chromatic aberration
     vec2 ncOff = vec2(0.015, 0.0);
     col.r = texture2D(uTexture, clamp(sampleUV + ncOff, 0.0, 1.0)).r;
     col.b = texture2D(uTexture, clamp(sampleUV - ncOff, 0.0, 1.0)).b;
 
-    // Brightness flicker
     col.rgb *= 0.85 + 0.15 * sin(uTime * 47.3);
 
-    // Momentary colour inversion
     float inv = step(0.975, fract(uTime * 3.1));
     col.rgb    = mix(col.rgb, 1.0 - col.rgb, inv);
 
-    // Heavy grain
     float ncGrain = rand(vUv + fract(uTime * 0.77));
     col.rgb      += (ncGrain - 0.5) * 0.22;
+  }
+
+  // ── Damage flash ──────────────────────────────────────────────────────────
+  if (uDamageFlash > 0.0) {
+    col.rgb = mix(col.rgb, vec3(1.0, 0.0, 0.0), uDamageFlash * 0.35);
   }
 
   col.rgb = clamp(col.rgb, 0.0, 1.0);

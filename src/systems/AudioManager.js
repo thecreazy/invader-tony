@@ -1,14 +1,13 @@
 /**
  * Procedural audio manager using Web Audio API.
  * No audio files — all sounds are synthesised on the fly.
- * AudioContext is initialised lazily on first use (browsers require user gesture).
+ * AudioContext initialised lazily on first user gesture.
  */
 
 export function createAudioManager() {
-  /** @type {AudioContext | null} */
-  let ctx  = null;
-  /** @type {GainNode | null} */
+  let ctx    = null;
   let master = null;
+  let _nicCageOscLoop = null; // for NicCageMode ascending loop
 
   function ensureCtx() {
     if (ctx) return;
@@ -18,14 +17,6 @@ export function createAudioManager() {
     master.connect(ctx.destination);
   }
 
-  /**
-   * Play a simple oscillator tone.
-   * @param {number}  freq     Start frequency (Hz)
-   * @param {string}  type     OscillatorType
-   * @param {number}  duration Seconds
-   * @param {number}  [freqEnd] Optional ramp target
-   * @param {number}  [vol]    Volume 0-1 (default 0.5)
-   */
   function tone(freq, type, duration, freqEnd, vol = 0.5) {
     try {
       ensureCtx();
@@ -36,18 +27,15 @@ export function createAudioManager() {
       osc.type = type;
       osc.frequency.setValueAtTime(freq, ctx.currentTime);
       if (freqEnd !== undefined) {
-        osc.frequency.exponentialRampToValueAtTime(
-          Math.max(freqEnd, 1), ctx.currentTime + duration
-        );
+        osc.frequency.exponentialRampToValueAtTime(Math.max(freqEnd, 1), ctx.currentTime + duration);
       }
       gain.gain.setValueAtTime(vol, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + duration + 0.01);
-    } catch (_) { /* blocked until first gesture */ }
+    } catch (_) {}
   }
 
-  /** One-shot white noise burst. */
   function noise(duration, vol = 1.0) {
     try {
       ensureCtx();
@@ -56,7 +44,6 @@ export function createAudioManager() {
       const buf        = ctx.createBuffer(1, bufLen, sampleRate);
       const data       = buf.getChannelData(0);
       for (let i = 0; i < bufLen; i++) data[i] = Math.random() * 2 - 1;
-
       const src  = ctx.createBufferSource();
       const gain = ctx.createGain();
       src.buffer = buf;
@@ -65,56 +52,103 @@ export function createAudioManager() {
       gain.gain.setValueAtTime(vol, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
       src.start(ctx.currentTime);
-    } catch (_) { /* blocked */ }
+    } catch (_) {}
+  }
+
+  function scheduleTones(freqs, type, dur, gap, vol = 0.4) {
+    try {
+      ensureCtx();
+      freqs.forEach((f, i) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(master);
+        osc.type = type;
+        osc.frequency.value = f;
+        const t = ctx.currentTime + i * gap;
+        gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        osc.start(t);
+        osc.stop(t + dur + 0.01);
+      });
+    } catch (_) {}
   }
 
   return {
-    init() { /* intentionally lazy */ },
+    init() {},
 
     playShoot()     { tone(880, 'square',   0.08, 440); },
-    playExplosion() { noise(0.15, 0.8); tone(80, 'sawtooth', 0.15, 30, 0.3); },
-    playHit()       { tone(220, 'sine',    0.06); },
-    playBossHit()   { tone(110, 'sawtooth', 0.10); },
+    playExplosion() { noise(0.15, 0.8); tone(80, 'sawtooth', 0.15, 28, 0.3); },
+    playHit()       { tone(220, 'sine', 0.06); },
 
-    playGameOver() {
+    /** Two-tone simultaneous hit (330hz + 165hz) for boss */
+    playBossHit() {
+      tone(330, 'sawtooth', 0.12, undefined, 0.45);
+      tone(165, 'sawtooth', 0.12, undefined, 0.35);
+    },
+
+    /** Low 55hz drone — plays for 2 seconds as boss enters */
+    playBossEntry() {
       try {
         ensureCtx();
-        [440, 330, 220, 110].forEach((f, i) => {
-          const osc  = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(master);
-          osc.type = 'square';
-          osc.frequency.value = f;
-          const t = ctx.currentTime + i * 0.13;
-          gain.gain.setValueAtTime(0.4, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.11);
-          osc.start(t);
-          osc.stop(t + 0.14);
-        });
-      } catch (_) { /* blocked */ }
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(master);
+        osc.type = 'sawtooth';
+        osc.frequency.value = 55;
+        // Fade in, then sustain
+        gain.gain.setValueAtTime(0.001, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + 0.5);
+        gain.gain.setValueAtTime(0.6, ctx.currentTime + 1.5);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 2.1);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 2.2);
+      } catch (_) {}
+    },
+
+    playGameOver() {
+      scheduleTones([440, 330, 220, 110], 'square', 0.11, 0.13);
     },
 
     playVictory() {
+      scheduleTones([523, 659, 784, 1047, 1318], 'sine', 0.10, 0.10);
+    },
+
+    /** Repeating ascending fanfare loop for NicCageMode — call once, then stop with stopNicCageLoop */
+    startNicCageLoop() {
       try {
         ensureCtx();
-        [523, 659, 784, 1047].forEach((f, i) => {
-          const osc  = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.connect(gain);
-          gain.connect(master);
-          osc.type = 'sine';
-          osc.frequency.value = f;
-          const t = ctx.currentTime + i * 0.10;
-          gain.gain.setValueAtTime(0.4, t);
-          gain.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
-          osc.start(t);
-          osc.stop(t + 0.12);
-        });
-      } catch (_) { /* blocked */ }
+        const freqs = [261, 329, 392, 523, 659, 784, 1047];
+        let offset = 0;
+        const scheduleNext = () => {
+          if (!ctx) return;
+          freqs.forEach((f, i) => {
+            const osc  = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(master);
+            osc.type = 'square';
+            osc.frequency.value = f;
+            const t = ctx.currentTime + offset + i * 0.07;
+            gain.gain.setValueAtTime(0.18, t);
+            gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+            osc.start(t);
+            osc.stop(t + 0.07);
+          });
+          offset += freqs.length * 0.07 + 0.2;
+          _nicCageOscLoop = setTimeout(scheduleNext, (freqs.length * 0.07 + 0.2) * 1000);
+        };
+        scheduleNext();
+      } catch (_) {}
+    },
+
+    stopNicCageLoop() {
+      if (_nicCageOscLoop) { clearTimeout(_nicCageOscLoop); _nicCageOscLoop = null; }
     },
 
     destroy() {
+      this.stopNicCageLoop();
       if (ctx) { ctx.close().catch(() => {}); ctx = null; }
     },
   };

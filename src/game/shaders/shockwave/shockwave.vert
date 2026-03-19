@@ -1,9 +1,8 @@
-// Shockwave shader — vertex stage
-// Passes UV and world position through; ripple displacement in fragment stage.
+// shockwave.vert — same fullscreen passthrough as scanlines
 
 varying vec2 vUv;
 
 void main() {
-  vUv = uv;
-  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  vUv         = uv;
+  gl_Position = vec4(position.xy, 0.0, 1.0);
 }

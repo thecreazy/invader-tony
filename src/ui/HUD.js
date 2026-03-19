@@ -15,7 +15,24 @@ function injectStyles() {
     @keyframes hud-msg-fade {
       0%   { opacity: 1; transform: translate(-50%,-50%) scale(1.1); }
       70%  { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-      100% { opacity: 0; transform: translate(-50%,-50%) scale(0.95); }
+      100% { opacity: 0; transform: translate(-50%,-50%) scale(0.9); }
+    }
+    @keyframes hud-quote-fade {
+      0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.9); }
+      10%  { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+      80%  { opacity: 1; }
+      100% { opacity: 0; }
+    }
+    @keyframes nic-cage-rainbow {
+      0%   { filter: hue-rotate(0deg)   drop-shadow(0 0 8px #ff0044); }
+      25%  { filter: hue-rotate(90deg)  drop-shadow(0 0 8px #ffff00); }
+      50%  { filter: hue-rotate(180deg) drop-shadow(0 0 8px #00ffff); }
+      75%  { filter: hue-rotate(270deg) drop-shadow(0 0 8px #ff00ff); }
+      100% { filter: hue-rotate(360deg) drop-shadow(0 0 8px #ff0044); }
+    }
+    @keyframes nic-cage-pulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1);   }
+      50%       { transform: translate(-50%, -50%) scale(1.08); }
     }
     .hud-root {
       position: absolute; inset: 0;
@@ -49,20 +66,20 @@ function injectStyles() {
     }
     .hud-boss-bar-wrap {
       position: absolute; top: 36px; left: 50%; transform: translateX(-50%);
-      display: none; flex-direction: column; align-items: center; gap: 3px;
+      display: none; flex-direction: column; align-items: center; gap: 4px;
     }
     .hud-boss-label {
       color: #ff0044; font-size: 8px; letter-spacing: 0.12em;
       text-shadow: 0 0 6px #ff0044;
     }
     .hud-boss-bar-bg {
-      width: 180px; height: 8px;
+      width: 220px; height: 10px;
       background: #220010; border: 1px solid #ff0044;
     }
     .hud-boss-bar-fill {
       height: 100%; width: 100%;
-      background: #ff0044;
-      transition: width 0.1s linear;
+      background: linear-gradient(90deg, #ff0044, #ff6600);
+      transition: width 0.12s linear;
     }
     .hud-message {
       position: absolute; top: 45%; left: 50%;
@@ -70,29 +87,49 @@ function injectStyles() {
       color: #ffff00; font-size: clamp(12px, 3vw, 20px);
       text-shadow: 0 0 10px #ffff00, 0 0 20px #ffff00;
       letter-spacing: 0.15em;
-      white-space: nowrap;
+      white-space: pre;
+      text-align: center;
       pointer-events: none;
       z-index: 30;
+    }
+    .hud-quote {
+      position: absolute; top: 58%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ff6600; font-size: clamp(7px, 1.2vw, 10px);
+      text-shadow: 0 0 6px #ff6600;
+      letter-spacing: 0.08em;
+      white-space: pre;
+      text-align: center;
+      pointer-events: none;
+      z-index: 28;
+    }
+    .hud-nic-cage-mode {
+      position: absolute; top: 30%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #ff00ff;
+      font-size: clamp(14px, 3.5vw, 24px);
+      letter-spacing: 0.12em;
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: 35;
+      animation: nic-cage-rainbow 0.6s linear infinite,
+                 nic-cage-pulse   1.0s ease-in-out infinite;
     }
   `;
   document.head.appendChild(s);
 }
 
-/**
- * @param {HTMLElement} container
- * @param {ReturnType<import('../game/GameState.js').createGameState>} gameState
- */
 export function createHUD(container, gameState) {
   injectStyles();
 
   const hudRoot = document.createElement('div');
   hudRoot.className = 'hud-root';
 
-  const scoreEl    = document.createElement('div');
+  const scoreEl = document.createElement('div');
   scoreEl.className = 'hud-score';
   scoreEl.textContent = 'SCORE: 00000';
 
-  const hiEl    = document.createElement('div');
+  const hiEl = document.createElement('div');
   hiEl.className = 'hud-hiscore';
   const initialHi = getScores()[0]?.score ?? 0;
   hiEl.textContent = `HI: ${String(initialHi).padStart(5, '0')}`;
@@ -101,17 +138,17 @@ export function createHUD(container, gameState) {
   const livesEl = document.createElement('div');
   livesEl.className = 'hud-lives';
 
-  const waveEl  = document.createElement('div');
+  const waveEl = document.createElement('div');
   waveEl.className = 'hud-wave';
   waveEl.textContent = 'WAVE 1';
 
-  // Boss HP bar (hidden until boss spawns)
+  // Boss HP bar
   const bossBarWrap = document.createElement('div');
   bossBarWrap.className = 'hud-boss-bar-wrap';
 
   const bossLabel = document.createElement('div');
   bossLabel.className = 'hud-boss-label';
-  bossLabel.textContent = '— CAGE PRIME —';
+  bossLabel.textContent = '\u2014 CAGE PRIME \u2014';
 
   const bossBarBg   = document.createElement('div');
   bossBarBg.className = 'hud-boss-bar-bg';
@@ -130,85 +167,89 @@ export function createHUD(container, gameState) {
   hudRoot.appendChild(bossBarWrap);
   container.appendChild(hudRoot);
 
-  function updateLives(lives) {
-    livesEl.textContent = '\u25B2'.repeat(Math.max(0, lives));
-  }
-
-  function updateScore(score) {
-    scoreEl.textContent = `SCORE: ${String(score).padStart(5, '0')}`;
-    if (score > _hiScore) {
-      _hiScore = score;
+  // ── Helpers ─────────────────────────────────────────────────────────────
+  function updateLives(n)  { livesEl.textContent = '\u25B2'.repeat(Math.max(0, n)); }
+  function updateScore(s)  {
+    scoreEl.textContent = `SCORE: ${String(s).padStart(5, '0')}`;
+    if (s > _hiScore) {
+      _hiScore = s;
       hiEl.textContent = `HI: ${String(_hiScore).padStart(5, '0')}`;
     }
   }
+  function updateWave(w)   { waveEl.textContent = `WAVE ${w}`; }
 
-  function updateWave(wave) {
-    waveEl.textContent = `WAVE ${wave}`;
-  }
-
-  // Initialise display
   updateLives(gameState.lives);
   updateScore(gameState.score);
 
-  // Event subscriptions
   const _onScore = s => updateScore(s);
   const _onLives = l => updateLives(l);
   const _onWave  = w => updateWave(w);
-
   gameState.on('score', _onScore);
   gameState.on('lives', _onLives);
   gameState.on('wave',  _onWave);
 
-  /** @type {ReturnType<typeof setTimeout> | null} */
-  let _msgTimeout = null;
+  let _msgTimeout   = null;
+  let _quoteTimeout = null;
+  let _nicCageEl    = null;
 
+  // ── Public API ───────────────────────────────────────────────────────────
   return {
     show() { hudRoot.style.display = ''; },
     hide() { hudRoot.style.display = 'none'; },
 
-    /**
-     * Show a centred overlay message for a duration.
-     * @param {string} text
-     * @param {number} duration ms
-     */
     showMessage(text, duration) {
-      const existing = hudRoot.querySelector('.hud-message');
-      if (existing) existing.remove();
+      hudRoot.querySelector('.hud-message')?.remove();
       if (_msgTimeout) { clearTimeout(_msgTimeout); _msgTimeout = null; }
-
       const msg = document.createElement('div');
       msg.className = 'hud-message';
       msg.textContent = text;
       msg.style.animation = `hud-msg-fade ${duration}ms ease-out forwards`;
       hudRoot.appendChild(msg);
-
       _msgTimeout = setTimeout(() => msg.remove(), duration);
     },
 
-    /**
-     * Show the boss HP bar.
-     * @param {number} hp
-     * @param {number} maxHp
-     */
+    /** Show a Cage quote in a smaller bar below the message area */
+    showBossQuote(text) {
+      hudRoot.querySelector('.hud-quote')?.remove();
+      if (_quoteTimeout) { clearTimeout(_quoteTimeout); _quoteTimeout = null; }
+      const q = document.createElement('div');
+      q.className = 'hud-quote';
+      q.textContent = `"${text}"`;
+      q.style.animation = 'hud-quote-fade 3.8s ease-in-out forwards';
+      hudRoot.appendChild(q);
+      _quoteTimeout = setTimeout(() => q.remove(), 3800);
+    },
+
     showBossBar(hp, maxHp) {
       bossBarWrap.style.display = 'flex';
       bossBarFill.style.width = `${(hp / maxHp) * 100}%`;
     },
 
-    /** @param {number} hp @param {number} maxHp */
     updateBossBar(hp, maxHp) {
       bossBarFill.style.width = `${Math.max(0, (hp / maxHp) * 100)}%`;
     },
 
-    hideBossBar() {
-      bossBarWrap.style.display = 'none';
+    hideBossBar() { bossBarWrap.style.display = 'none'; },
+
+    showNicCageMode() {
+      if (_nicCageEl) return;
+      _nicCageEl = document.createElement('div');
+      _nicCageEl.className = 'hud-nic-cage-mode';
+      _nicCageEl.textContent = '\u26A1 NICOLAS CAGE MODE \u26A1';
+      hudRoot.appendChild(_nicCageEl);
+    },
+
+    hideNicCageMode() {
+      _nicCageEl?.remove();
+      _nicCageEl = null;
     },
 
     dispose() {
       gameState.off('score', _onScore);
       gameState.off('lives', _onLives);
       gameState.off('wave',  _onWave);
-      if (_msgTimeout) clearTimeout(_msgTimeout);
+      if (_msgTimeout)   clearTimeout(_msgTimeout);
+      if (_quoteTimeout) clearTimeout(_quoteTimeout);
       container.removeChild(hudRoot);
       document.getElementById(STYLE_ID)?.remove();
     },

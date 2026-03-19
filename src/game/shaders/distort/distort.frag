@@ -1,107 +1,159 @@
-// distort.frag — procedural Nicholas Cage face shader
-// Draws a stylised face entirely from math. No textures.
-// Applied to the head sphere of each CageInvader / BossCage.
+// distort.frag — procedural Nicolas Cage face shader
+// Coordinate system: p = vUv * 2.0 - 1.0, range [-1, 1].
+// Applied to a PlaneGeometry face quad on each CageInvader / BossCage.
 
-uniform vec3  uColor;          // base skin tone
+uniform vec3  uColor;
 uniform float uTime;
-uniform float uGlitchIntensity; // 0 = normal, 1 = full chaos
-uniform float uPhase;           // 0, 1, 2  — boss phase tint
+uniform float uGlitchIntensity;
+uniform float uPhase;
 
 varying vec2 vUv;
 
-// ── SDF helpers ──────────────────────────────────────────────────────────────
+// ── SDF helpers ───────────────────────────────────────────────────────────────
 
-float sdRect(vec2 p, vec2 center, vec2 half) {
-  vec2 d = abs(p - center) - half;
+float sdRect(vec2 p, vec2 c, vec2 h) {
+  vec2 d = abs(p - c) - h;
   return max(d.x, d.y);
 }
 
-float ellipseD(vec2 p, vec2 center, vec2 radius) {
-  vec2 d = (p - center) / radius;
+float ellD(vec2 p, vec2 c, vec2 r) {
+  vec2 d = (p - c) / r;
   return dot(d, d);
 }
 
-// ── Face construction ─────────────────────────────────────────────────────────
-// UV space: sphere front maps U 0.25→0.75, V 0→1.
-// We remap so p.x ∈ [-0.5, 0.5], p.y ∈ [-0.5, 0.5]
-// (multiply uv.x - 0.5 by 2 to compensate for spherical U range).
+// Rotated sdRect for angled eyebrows
+float sdRectRot(vec2 p, vec2 c, vec2 h, float cosA, float sinA) {
+  vec2 d = p - c;
+  vec2 q = vec2(d.x * cosA + d.y * sinA, -d.x * sinA + d.y * cosA);
+  vec2 e = abs(q) - h;
+  return max(e.x, e.y);
+}
+
+// ── Face ──────────────────────────────────────────────────────────────────────
 
 vec3 buildFace(vec2 uv) {
-  vec2 p;
-  p.x = (uv.x - 0.5) * 2.0; // normalise spherical U range
-  p.y =  uv.y - 0.5;
+  vec2 p = uv * 2.0 - 1.0;
 
-  vec3 col = uColor;
+  // ── Skin base — warm tan ──────────────────────────────────────────────────
+  vec3 col = vec3(0.85, 0.65, 0.42);
 
-  // ── Hair (dark cap on top) ─────────────────────────────────────────────
-  float hairMask = smoothstep(0.28, 0.34, p.y);
-  col = mix(col, vec3(0.06, 0.03, 0.0), hairMask);
+  // ── Cheek flush ──────────────────────────────────────────────────────────
+  float lCheek = 1.0 - smoothstep(0.7, 1.0, ellD(p, vec2(-0.42, -0.12), vec2(0.22, 0.18)));
+  float rCheek = 1.0 - smoothstep(0.7, 1.0, ellD(p, vec2( 0.42, -0.12), vec2(0.22, 0.18)));
+  col += vec3(0.08, 0.02, 0.0) * max(lCheek, rCheek);
 
-  // ── Forehead shading ───────────────────────────────────────────────────
-  col *= 1.0 - 0.08 * smoothstep(0.10, 0.28, p.y);
+  // ── Hair — receding, thin on top, present on sides ───────────────────────
+  // Side/back hair: thick strips left and right of center on top
+  float sideHair = smoothstep(0.62, 0.68, p.y)
+                 * smoothstep(0.50, 0.60, abs(p.x));
+  col = mix(col, vec3(0.07, 0.04, 0.01), sideHair);
 
-  // ── Eyebrows ───────────────────────────────────────────────────────────
-  float lBrow = step(0.0, -sdRect(p, vec2(-0.22, 0.17), vec2(0.12, 0.028)));
-  float rBrow = step(0.0, -sdRect(p, vec2( 0.22, 0.17), vec2(0.12, 0.028)));
-  col = mix(col, vec3(0.07, 0.03, 0.0), max(lBrow, rBrow));
+  // Very sparse thin wisps across the top center (receding)
+  float wispMask = smoothstep(0.78, 0.82, p.y);
+  col = mix(col, vec3(0.09, 0.05, 0.01), wispMask * 0.5);
 
-  // ── Eyes ──────────────────────────────────────────────────────────────
-  float lEye = 1.0 - smoothstep(0.85, 1.0, ellipseD(p, vec2(-0.22, 0.07), vec2(0.11, 0.07)));
-  float rEye = 1.0 - smoothstep(0.85, 1.0, ellipseD(p, vec2( 0.22, 0.07), vec2(0.11, 0.07)));
-  col = mix(col, vec3(0.10, 0.05, 0.01), max(lEye, rEye));
+  // Top hairline edge (soft)
+  col = mix(col, vec3(0.07, 0.04, 0.01), smoothstep(0.88, 0.95, p.y));
 
-  // Iris (slightly lighter brown ring)
-  float lIris = 1.0 - smoothstep(0.5, 0.75, ellipseD(p, vec2(-0.22, 0.07), vec2(0.07, 0.045)));
-  float rIris = 1.0 - smoothstep(0.5, 0.75, ellipseD(p, vec2( 0.22, 0.07), vec2(0.07, 0.045)));
-  col = mix(col, vec3(0.22, 0.12, 0.04), max(lIris, rIris) * max(lEye, rEye));
+  // ── Forehead shading — large brow, slight gradient ───────────────────────
+  col -= 0.04 * smoothstep(0.10, 0.62, p.y);
 
-  // Pupils
-  float lPup = 1.0 - smoothstep(0.3, 0.5, ellipseD(p, vec2(-0.22, 0.06), vec2(0.038, 0.028)));
-  float rPup = 1.0 - smoothstep(0.3, 0.5, ellipseD(p, vec2( 0.22, 0.06), vec2(0.038, 0.028)));
-  col = mix(col, vec3(0.02, 0.01, 0.0), max(lPup, rPup));
+  // ── Eyebrows — thick, dark, angled inward (intense) ──────────────────────
+  // Left brow: slightly angled down toward nose
+  float lBrow = step(0.0, -sdRectRot(p, vec2(-0.35, 0.24), vec2(0.19, 0.0385), 0.980, -0.199));
+  // Right brow: mirror
+  float rBrow = step(0.0, -sdRectRot(p, vec2( 0.35, 0.24), vec2(0.19, 0.0385), 0.980,  0.199));
+  col = mix(col, vec3(0.08, 0.04, 0.01), max(lBrow, rBrow));
 
-  // Highlights
-  float lHL = 1.0 - smoothstep(0.3, 0.6, ellipseD(p, vec2(-0.17, 0.10), vec2(0.022, 0.018)));
-  float rHL = 1.0 - smoothstep(0.3, 0.6, ellipseD(p, vec2( 0.27, 0.10), vec2(0.022, 0.018)));
-  col = mix(col, vec3(1.0), max(lHL, rHL));
+  // ── Eyes — droopy, wide ───────────────────────────────────────────────────
+  float lEyeW = 1.0 - smoothstep(0.85, 1.0, ellD(p, vec2(-0.35, 0.05), vec2(0.22, 0.13)));
+  float rEyeW = 1.0 - smoothstep(0.85, 1.0, ellD(p, vec2( 0.35, 0.05), vec2(0.22, 0.13)));
+  float eyeW  = max(lEyeW, rEyeW);
+  // Eye white
+  col = mix(col, vec3(0.93, 0.91, 0.86), eyeW);
 
-  // ── Nose bridge ──────────────────────────────────────────────────────
-  float nose = step(0.0, -sdRect(p, vec2(0.0, -0.02), vec2(0.06, 0.09)));
-  col = mix(col, uColor * 0.72, nose);
+  // Iris — slightly large for wide-eyed "YOU DON'T SAY" look
+  float lIris = 1.0 - smoothstep(0.7, 1.0, ellD(p, vec2(-0.35, 0.04), vec2(0.10, 0.12)));
+  float rIris = 1.0 - smoothstep(0.7, 1.0, ellD(p, vec2( 0.35, 0.04), vec2(0.10, 0.12)));
+  col = mix(col, vec3(0.28, 0.18, 0.06), max(lIris, rIris) * eyeW);
+
+  // Pupil
+  float lPup = 1.0 - smoothstep(0.4, 0.7, ellD(p, vec2(-0.35, 0.04), vec2(0.055, 0.065)));
+  float rPup = 1.0 - smoothstep(0.4, 0.7, ellD(p, vec2( 0.35, 0.04), vec2(0.055, 0.065)));
+  col = mix(col, vec3(0.03, 0.02, 0.01), max(lPup, rPup) * eyeW);
+
+  // Catchlight
+  float lHL = 1.0 - smoothstep(0.3, 0.7, ellD(p, vec2(-0.28, 0.10), vec2(0.030, 0.025)));
+  float rHL = 1.0 - smoothstep(0.3, 0.7, ellD(p, vec2( 0.42, 0.10), vec2(0.030, 0.025)));
+  col = mix(col, vec3(1.0), max(lHL, rHL) * eyeW);
+
+  // Upper eyelid shadow — heavy droopy lid
+  float lLid = step(0.0, -sdRect(p, vec2(-0.35, 0.145), vec2(0.22, 0.032))) * lEyeW;
+  float rLid = step(0.0, -sdRect(p, vec2( 0.35, 0.145), vec2(0.22, 0.032))) * rEyeW;
+  col = mix(col, vec3(0.32, 0.20, 0.10), max(lLid, rLid));
+
+  // ── Nose — long, prominent, bulbous tip ──────────────────────────────────
+  // Bridge
+  float bridge = step(0.0, -sdRect(p, vec2(0.0, 0.09), vec2(0.07, 0.19)));
+  col = mix(col, col * 0.82, bridge);
+
+  // Bulbous tip — rounded lobe at bottom of nose
+  float tipD  = length(p - vec2(0.0, -0.14));
+  float tip   = smoothstep(0.20, 0.14, tipD);
+  col = mix(col, col * 0.78, tip);
+
   // Nostrils
-  float lNos = 1.0 - smoothstep(0.7, 1.0, ellipseD(p, vec2(-0.07, -0.10), vec2(0.042, 0.03)));
-  float rNos = 1.0 - smoothstep(0.7, 1.0, ellipseD(p, vec2( 0.07, -0.10), vec2(0.042, 0.03)));
-  col = mix(col, uColor * 0.55, max(lNos, rNos));
+  float lNos = 1.0 - smoothstep(0.7, 1.0, ellD(p, vec2(-0.12, -0.22), vec2(0.065, 0.048)));
+  float rNos = 1.0 - smoothstep(0.7, 1.0, ellD(p, vec2( 0.12, -0.22), vec2(0.065, 0.048)));
+  col = mix(col, vec3(0.18, 0.09, 0.04), max(lNos, rNos));
 
-  // ── Mouth ────────────────────────────────────────────────────────────
-  float mouth = step(0.0, -sdRect(p, vec2(0.02, -0.22), vec2(0.22, 0.042)));
-  col = mix(col, vec3(0.05, 0.01, 0.01), mouth);
+  // ── Mouth — wide, thin-lipped, slightly open ──────────────────────────────
+  // Dark mouth interior
+  float mouthInner = step(0.0, -sdRect(p, vec2(0.0, -0.45), vec2(0.30, 0.038)));
+  col = mix(col, vec3(0.12, 0.04, 0.04), mouthInner);
 
-  // Teeth (4 rects inside mouth)
-  float t0 = step(0.0, -sdRect(p, vec2(-0.14, -0.217), vec2(0.038, 0.026)));
-  float t1 = step(0.0, -sdRect(p, vec2(-0.05, -0.217), vec2(0.038, 0.026)));
-  float t2 = step(0.0, -sdRect(p, vec2( 0.05, -0.217), vec2(0.038, 0.026)));
-  float t3 = step(0.0, -sdRect(p, vec2( 0.14, -0.217), vec2(0.038, 0.026)));
-  float teeth = max(max(t0, t1), max(t2, t3)) * mouth;
-  col = mix(col, vec3(0.96, 0.94, 0.88), teeth);
+  // Teeth — white strip
+  float teeth = step(0.0, -sdRect(p, vec2(0.0, -0.43), vec2(0.28, 0.020)));
+  col = mix(col, vec3(0.96, 0.94, 0.88), teeth * mouthInner);
 
-  // ── Jaw / chin shadow ────────────────────────────────────────────────
-  col *= 1.0 - 0.10 * smoothstep(-0.42, -0.28, p.y);
+  // Tooth divisions — 3 thin dark vertical lines
+  float td0 = step(0.0, -sdRect(p, vec2(-0.14, -0.43), vec2(0.007, 0.020))) * teeth;
+  float td1 = step(0.0, -sdRect(p, vec2( 0.00, -0.43), vec2(0.007, 0.020))) * teeth;
+  float td2 = step(0.0, -sdRect(p, vec2( 0.14, -0.43), vec2(0.007, 0.020))) * teeth;
+  col = mix(col, vec3(0.18, 0.10, 0.08), max(max(td0, td1), td2));
 
+  // Upper lip
+  float upperLip = step(0.0, -sdRect(p, vec2(0.0, -0.395), vec2(0.38, 0.017)));
+  col = mix(col, vec3(0.55, 0.25, 0.18), upperLip);
+
+  // Lower lip
+  float lowerLip = step(0.0, -sdRect(p, vec2(0.0, -0.485), vec2(0.36, 0.022)));
+  col = mix(col, vec3(0.52, 0.22, 0.15), lowerLip);
+
+  // ── Jaw / chin shadow ─────────────────────────────────────────────────────
+  col *= 1.0 - 0.12 * (1.0 - smoothstep(-0.90, -0.60, p.y));
+
+  col = clamp(col, 0.0, 1.0);
   return col;
 }
 
 // ── Glitch ────────────────────────────────────────────────────────────────────
 
 vec3 buildFaceGlitched(vec2 uv, float intensity) {
-  // Horizontal glitch bands
-  float bandRng   = fract(sin(floor(uv.y * 18.0) + uTime * 8.0) * 43758.5453);
-  float bandMask  = step(1.0 - intensity * 0.6, bandRng) * intensity;
+  vec2 p = uv * 2.0 - 1.0;
 
-  vec2 uvR = vec2(uv.x + intensity * 0.04 + bandMask * 0.08, uv.y);
-  vec2 uvB = vec2(uv.x - intensity * 0.04 - bandMask * 0.08, uv.y);
+  // Glitch bars: random horizontal slices shift sideways
+  float bandRng  = fract(sin(floor(p.y * 15.0 + uTime * 8.0) * 43758.5453));
+  float bandMask = step(0.94, bandRng) * intensity;
+  float shift    = bandMask * intensity * 0.15;
 
-  vec3 baseCol = buildFace(uv);
+  vec2 uvShifted = vec2(uv.x + shift, uv.y);
+
+  // RGB split on shifted uv
+  vec2 uvR = vec2(uvShifted.x + intensity * 0.035, uvShifted.y);
+  vec2 uvB = vec2(uvShifted.x - intensity * 0.035, uvShifted.y);
+
+  vec3 baseCol = buildFace(uvShifted);
   vec3 rCol    = buildFace(uvR);
   vec3 bCol    = buildFace(uvB);
 
@@ -109,12 +161,12 @@ vec3 buildFaceGlitched(vec2 uv, float intensity) {
   return mix(baseCol, split, intensity);
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
+// ── Main ──────────────────────────────────────────────────────────────────────
 
 void main() {
   vec3 col = buildFaceGlitched(vUv, uGlitchIntensity);
 
-  // Phase tint: gradually redder as boss gets angrier
+  // Phase tint — redder as boss phases progress
   float p1 = step(1.0, uPhase);
   float p2 = step(2.0, uPhase);
   col = mix(col, mix(col, vec3(1.0, 0.0, 0.0), 0.18), p1);

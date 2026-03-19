@@ -3,11 +3,11 @@
  * Never hardcode values in game logic; reference CONFIG instead.
  */
 export const CONFIG = {
-  GRID: { COLS: 10, ROWS: 4 },
-  PLAYER: { SPEED: 8, BULLET_COOLDOWN: 300, LIVES: 3 },
-  ENEMY: { BASE_SPEED: 1.5, SHOOT_INTERVAL_MIN: 800, SHOOT_INTERVAL_MAX: 2000 },
+  GRID: { COLS: 11, ROWS: 5 },
+  PLAYER: { SPEED: 8, BULLET_COOLDOWN: 180, LIVES: 3 },
+  ENEMY: { BASE_SPEED: 0.6, SHOOT_INTERVAL_MIN: 1500, SHOOT_INTERVAL_MAX: 4000 },
   BOSS: { HP: 20, PHASES: [0.66, 0.33] },
-  CANVAS: { FOV: 75, NEAR: 0.1, FAR: 100 },
+  CANVAS: { FOV: 70, NEAR: 0.1, FAR: 100 },
   COLORS: {
     PLAYER: '#00ffff',
     ENEMY: '#ffaa00',

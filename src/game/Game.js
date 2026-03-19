@@ -31,10 +31,10 @@ const _pB = new THREE.Vector3();
 const GRID_COLS        = CONFIG.GRID.COLS;   // 10
 const GRID_ROWS        = CONFIG.GRID.ROWS;   // 4
 const TOTAL_INVADERS   = GRID_COLS * GRID_ROWS;
-const DROP_AMOUNT      = 0.5;
-const EDGE_RIGHT       = 6.5;
-const EDGE_LEFT        = -6.5;
-const INVADER_FLOOR_Y  = -3.5;
+const DROP_AMOUNT      = 0.3;
+const EDGE_RIGHT = 5.5;
+const EDGE_LEFT  = -5.5;
+const INVADER_FLOOR_Y  = -6.5;
 const SHOCKWAVE_POOL   = 5;
 
 /**
@@ -122,7 +122,7 @@ export function createGame(canvas, hudElement) {
       CONFIG.CANVAS.NEAR,
       CONFIG.CANVAS.FAR,
     );
-    camera.position.z = 10;
+    camera.position.z = 12;
 
     scene = new THREE.Scene();
     clock = new THREE.Clock();
@@ -199,7 +199,7 @@ export function createGame(canvas, hudElement) {
 
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
-        invaders.push(createCageInvader(scene, { col, row }));
+        invaders.push(createCageInvader(scene, { col, row, hSpacing: 1.0, vSpacing: 1.1, topY: 4.5 }));
       }
     }
 
@@ -360,8 +360,10 @@ export function createGame(canvas, hudElement) {
 
     if (aliveCount === 0) return;
 
-    // Speed scales with casualties
-    grid.speed = CONFIG.ENEMY.BASE_SPEED * (1 + (1 - aliveCount / TOTAL_INVADERS) * 2.5);
+    // Speed only starts scaling after 70% of invaders are killed
+    const aliveRatio = aliveCount / TOTAL_INVADERS;
+    const speedMultiplier = aliveRatio > 0.3 ? 1.0 : 1.0 + ((0.3 - aliveRatio) / 0.3) * 3.0;
+    grid.speed = CONFIG.ENEMY.BASE_SPEED * speedMultiplier;
 
     // Move
     grid.offsetX += grid.direction * grid.speed * delta;

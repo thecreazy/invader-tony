@@ -1,9 +1,8 @@
 {
   "rewrites": [
-    { "source": "/home",              "destination": "/app.html" },
-    { "source": "/game",              "destination": "/app.html" },
-    { "source": "/end",               "destination": "/app.html" },
-    { "source": "/credits",           "destination": "/app.html" },
-    { "source": "/leaderboard",       "destination": "/app.html" }
+    { "source": "/home",    "destination": "/app.html" },
+    { "source": "/game",    "destination": "/app.html" },
+    { "source": "/end",     "destination": "/app.html" },
+    { "source": "/credits", "destination": "/app.html" }
   ]
 }

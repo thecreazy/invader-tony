@@ -39,7 +39,7 @@ let menuEls = [];
 
 const MENU_ITEMS = [
   { label: 'PLAY GAME',   route: '/game' },
-  { label: 'HIGH SCORES', route: '/leaderboard' },
+  { label: 'HIGH SCORES', route: '/leaderboard', external: true },
   { label: 'CREDITS',     route: '/credits' },
 ];
 
@@ -366,7 +366,12 @@ async function selectItem(index) {
   el.classList.add('glitch-select');
   await new Promise(r => setTimeout(r, 200));
   el.classList.remove('glitch-select');
-  navigate(MENU_ITEMS[index].route);
+  const item = MENU_ITEMS[index];
+  if (item.external) {
+    window.location.href = item.route;
+  } else {
+    navigate(item.route);
+  }
 }
 
 // ─── Event handlers ───────────────────────────────────────────────────────────

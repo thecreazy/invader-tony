@@ -11,7 +11,7 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://invadertony.vercel.app/leaderboard-public</loc>
+    <loc>https://invadertony.vercel.app/leaderboard</loc>
     <changefreq>daily</changefreq>
     <priority>0.7</priority>
   </url>

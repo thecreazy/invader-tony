@@ -11,9 +11,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // bypassing Vite's SPA fallback middleware.
 function staticPagesPlugin() {
   const staticRoutes = {
-    '/':                   'index.html',
-    '/how-to-play':        'how-to-play.html',
-    '/leaderboard-public': 'leaderboard-public.html',
+    '/':              'index.html',
+    '/how-to-play':   'how-to-play.html',
+    '/leaderboard':   'leaderboard.html',
   };
 
   return {

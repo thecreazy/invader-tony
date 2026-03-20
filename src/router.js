@@ -1,24 +1,22 @@
 /**
  * History API SPA router.
- * Handles only in-app routes (/home, /game, /end, /credits, /leaderboard).
- * "/" and static SEO pages are served as plain HTML from public/ — outside this router.
+ * Handles only in-app routes (/home, /game, /end, /credits).
+ * "/", "/leaderboard", "/how-to-play" are static HTML from public/ — outside this router.
  * Each page module must export mount(container) and unmount().
  */
 
-import { HomePage }        from './pages/HomePage.js';
-import { GamePage }        from './pages/GamePage.js';
-import { EndPage }         from './pages/EndPage.js';
-import { LeaderboardPage } from './pages/LeaderboardPage.js';
-import { CreditsPage }     from './pages/CreditsPage.js';
-import { updateMeta }      from './services/seo.js';
+import { HomePage }    from './pages/HomePage.js';
+import { GamePage }    from './pages/GamePage.js';
+import { EndPage }     from './pages/EndPage.js';
+import { CreditsPage } from './pages/CreditsPage.js';
+import { updateMeta }  from './services/seo.js';
 
 /** @type {Record<string, { mount: (el: HTMLElement) => void, unmount: () => void }>} */
 const routes = {
-  '/home':        HomePage,
-  '/game':        GamePage,
-  '/end':         EndPage,
-  '/leaderboard': LeaderboardPage,
-  '/credits':     CreditsPage,
+  '/home':    HomePage,
+  '/game':    GamePage,
+  '/end':     EndPage,
+  '/credits': CreditsPage,
 };
 
 /** @type {HTMLElement | null} */

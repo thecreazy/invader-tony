@@ -1,7 +1,7 @@
 User-agent: *
 Allow: /
 Allow: /how-to-play
-Allow: /leaderboard-public
+Allow: /leaderboard
 Disallow: /game
 Disallow: /end
 Disallow: /home

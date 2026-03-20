@@ -354,7 +354,7 @@ function buildDOM(score, isWin) {
 
   leaderboardBtn.addEventListener('click', () => {
     if (!submitted) submitScore();
-    navigate('/leaderboard');
+    window.location.href = '/leaderboard';
   });
 
   _cleanupInput = () => {

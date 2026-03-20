@@ -19,6 +19,7 @@ import { createBulletPool }     from './entities/Bullet.js';
 import { createTonyInvader, disposeInvaderResources, updateInvaderShaderTime } from './entities/TonyInvader.js';
 import { createBossTony }       from './entities/BossTony.js';
 import { createHUD }            from '../ui/HUD.js';
+import { createChiptunePlayer } from '../systems/ChiptunePlayer.js';
 
 import scanlinesVert  from './shaders/scanlines/scanlines.vert';
 import scanlinesFrag  from './shaders/scanlines/scanlines.frag';
@@ -58,6 +59,8 @@ export function createGame(canvas, hudElement) {
 
   // ── Systems ───────────────────────────────────────────────────────────────
   let gameState, inputManager, audioManager, particleSystem, hud;
+  let chiptunePlayer = null;
+  let _visibilityHandler = null;
 
   // ── Entities ──────────────────────────────────────────────────────────────
   let player, playerBullets, enemyBullets;
@@ -187,7 +190,26 @@ export function createGame(canvas, hudElement) {
     inputManager   = createInputManager(canvas.parentElement);
     audioManager   = createAudioManager();
     particleSystem = createParticleSystem(scene);
-    hud            = createHUD(hudElement, gameState);
+    chiptunePlayer = createChiptunePlayer();
+
+    hud = createHUD(hudElement, gameState, {
+      onMuteToggle: (muted) => {
+        chiptunePlayer.setVolume(muted ? 0 : (gameState.current === STATES.BOSS_FIGHT ? 0.25 : 0.5));
+      },
+    });
+
+    // Tab visibility — pause music when hidden, resume when visible
+    _visibilityHandler = () => {
+      if (document.hidden) {
+        chiptunePlayer.stop();
+      } else if (
+        gameState.current === STATES.PLAYING ||
+        gameState.current === STATES.BOSS_FIGHT
+      ) {
+        chiptunePlayer.play();
+      }
+    };
+    document.addEventListener('visibilitychange', _visibilityHandler);
 
     playerBullets = createBulletPool(scene, 30, 'player');
     enemyBullets  = createBulletPool(scene, 30, 'enemy');
@@ -240,6 +262,7 @@ export function createGame(canvas, hudElement) {
   function spawnBoss() {
     bossSpawned = true;
     gameState.transition(STATES.BOSS_FIGHT);
+    chiptunePlayer?.setVolume(0.25);
 
     boss = createBossTony(scene, {
       enemyBulletPool: enemyBullets,
@@ -546,6 +569,7 @@ export function createGame(canvas, hudElement) {
     if (gameState.current === STATES.GAME_OVER) return;
     gameState.transition(STATES.GAME_OVER);
     if (tonyModeActive) deactivateTonyMode();
+    chiptunePlayer?.stop();
     audioManager.playGameOver();
     hud.showMessage('GAME OVER', 1800);
     sessionStorage.setItem('tony_invaders_final_score', String(gameState.score));
@@ -557,6 +581,7 @@ export function createGame(canvas, hudElement) {
     if (gameState.current === STATES.VICTORY) return;
     gameState.transition(STATES.VICTORY);
     if (tonyModeActive) deactivateTonyMode();
+    chiptunePlayer?.stop();
     audioManager.playVictory();
     hud.showMessage('YOU WIN!', 1800);
     hud.hideBossBar();
@@ -572,6 +597,10 @@ export function createGame(canvas, hudElement) {
     start() {
       clock.start();
       loop();
+      // Web Audio requires a user gesture before AudioContext can start.
+      // Start music on the first keypress or touch.
+      window.addEventListener('keydown', () => chiptunePlayer.play(), { once: true });
+      canvas.addEventListener('touchstart', () => chiptunePlayer.play(), { once: true });
     },
 
     stop() {
@@ -581,6 +610,14 @@ export function createGame(canvas, hudElement) {
     destroy() {
       if (animId) { cancelAnimationFrame(animId); animId = null; }
       window.removeEventListener('resize', onResize);
+
+      if (_visibilityHandler) {
+        document.removeEventListener('visibilitychange', _visibilityHandler);
+        _visibilityHandler = null;
+      }
+
+      chiptunePlayer?.destroy();
+      chiptunePlayer = null;
 
       inputManager?.destroy();
       audioManager?.destroy();

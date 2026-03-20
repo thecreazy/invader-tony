@@ -46,20 +46,7 @@ const MENU_ITEMS = [
   { label: 'CREDITS',     route: '/credits' },
 ];
 
-const ASCII_ART = `▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-█ ▄▄▄▄  ▄▄  ▄  ▄  ▄  ▀█
-█ █  █  █ █ █  █  █  ▄█
-█ █  █  █ █ █  █  ████
-█ █  █  ██  ██ █  █  ▀█
-▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
-▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄
-█▄ ██ ▄█ ▄▄  ▄  ██  █ █
-█  ██  █ █ █  █  █  █ █
-█  ██  █ ██   █  █████
-█  ▀▀  █ █ █ ██  █  █ █
-▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀`;
-
-const GLITCH_CHARS = ['█', '▓', '▒', '▀', '▄'];
+const GLITCH_FILTER_BASE = 'drop-shadow(0 0 8px #ff6600)';
 const STYLE_ID = 'home-page-styles';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
@@ -213,15 +200,13 @@ function injectStyles() {
     }
 
     .home-ascii {
-      color: var(--color-orange);
-      font-size: clamp(6px, 1.2vw, 11px);
-      line-height: 1.2;
-      letter-spacing: 0.05em;
-      margin: 6px 0;
-      animation: ascii-pulse 2s ease-in-out infinite alternate;
+      width: clamp(64px, 10vw, 96px);
+      height: auto;
       display: block;
-      white-space: pre;
-      font-family: monospace;
+      margin: 8px auto;
+      image-rendering: pixelated;
+      filter: drop-shadow(0 0 8px #ff6600);
+      animation: ascii-pulse 2s ease-in-out infinite alternate;
       user-select: none;
     }
 
@@ -339,21 +324,18 @@ function startAttractMode() {
   if (!asciiEl || glitchInterval) return;
   glitchInterval = setInterval(() => {
     if (!asciiEl) return;
-    const chars = originalAscii.split('');
-    for (let i = 0; i < 3; i++) {
-      const idx = Math.floor(Math.random() * chars.length);
-      chars[idx] = GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
-    }
-    asciiEl.textContent = chars.join('');
+    const brightness = 1.2 + Math.random() * 0.5;
+    const blur = 4 + Math.random() * 10;
+    asciiEl.style.filter = `drop-shadow(0 0 ${blur}px #ff6600) brightness(${brightness})`;
     setTimeout(() => {
-      if (asciiEl) asciiEl.textContent = originalAscii;
+      if (asciiEl) asciiEl.style.filter = GLITCH_FILTER_BASE;
     }, 80);
   }, 150);
 }
 
 function stopAttractMode() {
   if (glitchInterval) { clearInterval(glitchInterval); glitchInterval = null; }
-  if (asciiEl) asciiEl.textContent = originalAscii;
+  if (asciiEl) asciiEl.style.filter = GLITCH_FILTER_BASE;
 }
 
 function resetAttractTimer() {

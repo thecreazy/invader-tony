@@ -115,11 +115,33 @@ function injectStyles() {
       animation: tony-rainbow 0.6s linear infinite,
                  tony-pulse   1.0s ease-in-out infinite;
     }
+    .hud-mute {
+      position: absolute; top: 38px; right: 16px;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      color: #333333;
+      background: none;
+      border: 1px solid #333333;
+      padding: 4px 8px;
+      cursor: pointer;
+      pointer-events: auto;
+      letter-spacing: 0.08em;
+      line-height: 1;
+      transition: color 0.1s, border-color 0.1s;
+    }
+    .hud-mute:hover { color: #ffffff; border-color: #ffffff; }
   `;
   document.head.appendChild(s);
 }
 
-export function createHUD(container, gameState) {
+const MUTE_KEY = 'invadertony_muted';
+
+/**
+ * @param {HTMLElement} container
+ * @param {object} gameState
+ * @param {{ onMuteToggle?: (muted: boolean) => void }} [opts]
+ */
+export function createHUD(container, gameState, opts = {}) {
   injectStyles();
 
   const hudRoot = document.createElement('div');
@@ -160,11 +182,28 @@ export function createHUD(container, gameState) {
   bossBarWrap.appendChild(bossLabel);
   bossBarWrap.appendChild(bossBarBg);
 
+  // Mute button
+  let _muted = localStorage.getItem(MUTE_KEY) === 'true';
+  const muteBtn = document.createElement('button');
+  muteBtn.className = 'hud-mute';
+  muteBtn.textContent = _muted ? '\u266A OFF' : '\u266A ON';
+
+  // Apply initial mute state on next tick (after chiptunePlayer is wired up)
+  setTimeout(() => opts.onMuteToggle?.(_muted), 0);
+
+  muteBtn.addEventListener('click', () => {
+    _muted = !_muted;
+    localStorage.setItem(MUTE_KEY, String(_muted));
+    muteBtn.textContent = _muted ? '\u266A OFF' : '\u266A ON';
+    opts.onMuteToggle?.(_muted);
+  });
+
   hudRoot.appendChild(scoreEl);
   hudRoot.appendChild(hiEl);
   hudRoot.appendChild(livesEl);
   hudRoot.appendChild(waveEl);
   hudRoot.appendChild(bossBarWrap);
+  hudRoot.appendChild(muteBtn);
   container.appendChild(hudRoot);
 
   // ── Helpers ─────────────────────────────────────────────────────────────

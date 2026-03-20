@@ -8,6 +8,7 @@ import { GamePage }        from './pages/GamePage.js';
 import { EndPage }         from './pages/EndPage.js';
 import { LeaderboardPage } from './pages/LeaderboardPage.js';
 import { CreditsPage }     from './pages/CreditsPage.js';
+import { updateMeta }      from './services/seo.js';
 
 /** @type {Record<string, { mount: (el: HTMLElement) => void, unmount: () => void }>} */
 const routes = {
@@ -40,6 +41,8 @@ async function renderPage(pathname) {
     currentPage.unmount();
   }
   currentPage = null;
+
+  updateMeta(pathname);
 
   const PageModule = getPageModule(pathname);
   currentPage = PageModule;

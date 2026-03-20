@@ -284,6 +284,45 @@ function injectStyles() {
     .cr-egg-sub1 { color: var(--color-yellow); font-size: 8px; margin-bottom: 6px; }
     .cr-egg-sub2 { color: var(--color-dim);    font-size: 7px; }
 
+    /* ── SEO article ── */
+    .cr-seo-article {
+      width: 100%;
+      max-width: 560px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 40px;
+    }
+
+    .cr-seo-article h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      letter-spacing: 0.15em;
+      margin: 0 0 10px;
+      padding: 0;
+    }
+
+    .cr-seo-article p {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 7px;
+      line-height: 2.4;
+      color: var(--color-white);
+      text-align: center;
+      margin: 0 0 28px;
+      padding: 0;
+    }
+
+    .cr-seo-article a {
+      color: var(--color-cyan);
+      text-decoration: none;
+      border-bottom: 1px solid var(--color-cyan);
+    }
+
+    .cr-seo-article a:hover {
+      color: var(--color-magenta);
+      border-color: var(--color-magenta);
+    }
+
     /* ── Buttons ── */
     .cr-buttons {
       display: flex;
@@ -479,6 +518,44 @@ function buildDOM() {
   easterEggEl.appendChild(eggSub2);
   content.appendChild(easterEggEl);
 
+  // ── F2: SEO content block ──
+  const seoSep = document.createElement('p');
+  seoSep.className = 'cr-sep';
+  seoSep.textContent = '\u2500'.repeat(40);
+  content.appendChild(seoSep);
+
+  const article = document.createElement('article');
+  article.className = 'cr-seo-article';
+
+  const h2Project = document.createElement('h2');
+  h2Project.style.color = 'var(--color-cyan)';
+  h2Project.textContent = 'IL PROGETTO';
+
+  const pProject = document.createElement('p');
+  pProject.textContent = 'InvaderTony \u00E8 un gioco arcade browser sviluppato da Riccardo Canella come esperimento creativo con Claude AI di Anthropic. Il progetto esplora le possibilit\u00E0 di sviluppo assistito da intelligenza artificiale applicato al game development con Three.js e GLSL shaders.';
+
+  const h2Tech = document.createElement('h2');
+  h2Tech.style.color = 'var(--color-yellow)';
+  h2Tech.textContent = 'TECNOLOGIA';
+
+  const pTech = document.createElement('p');
+  pTech.innerHTML = 'Il gioco \u00E8 costruito interamente con tecnologie web standard: Three.js per il motore 3D e gli shader GLSL, Vite come build tool, Web Audio API per l\u2019audio procedurale, vanilla JavaScript senza framework. Il codice sorgente \u00E8 open source e disponibile su <a href="#" target="_blank" rel="noopener">GitHub</a>.';
+
+  const h2Insp = document.createElement('h2');
+  h2Insp.style.color = 'var(--color-magenta)';
+  h2Insp.textContent = 'ISPIRAZIONE';
+
+  const pInsp = document.createElement('p');
+  pInsp.textContent = 'InvaderTony \u00E8 un tributo goliardico a TonyPitony, cantautore siciliano noto per il suo stile provocatorio, la maschera da Elvis e i testi irriverenti. Il gioco non ha scopo commerciale ed \u00E8 distribuito gratuitamente.';
+
+  article.appendChild(h2Project);
+  article.appendChild(pProject);
+  article.appendChild(h2Tech);
+  article.appendChild(pTech);
+  article.appendChild(h2Insp);
+  article.appendChild(pInsp);
+  content.appendChild(article);
+
   // ── G: Buttons ──
   const buttons = document.createElement('div');
   buttons.className = 'cr-buttons';
@@ -518,6 +595,26 @@ export function mount(container) {
   root = buildDOM();
   _container.appendChild(root);
 
+  // JSON-LD Person schema
+  const schema = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    'name': 'Riccardo Canella',
+    'url': 'https://invadertony.vercel.app/credits',
+    'sameAs': [
+      'https://github.com/placeholder',
+      'https://linkedin.com/in/placeholder',
+      'https://instagram.com/placeholder',
+    ],
+    'knowsAbout': ['JavaScript', 'Three.js', 'GLSL', 'Game Development', 'Web Development'],
+    'description': 'Sviluppatore web e game developer. Autore di InvaderTony, gioco arcade browser dedicato a TonyPitony.',
+  };
+  const seoScript = document.createElement('script');
+  seoScript.type = 'application/ld+json';
+  seoScript.id = 'credits-schema';
+  seoScript.textContent = JSON.stringify(schema);
+  document.head.appendChild(seoScript);
+
   function onKey(e) {
     const key = e.key;
     if (key === KONAMI[konamiProgress]) {
@@ -539,6 +636,7 @@ export function mount(container) {
 export function unmount() {
   if (_removeKey) _removeKey();
   if (root && _container) _container.removeChild(root);
+  document.getElementById('credits-schema')?.remove();
   root = null;
   _container = null;
   easterEggEl = null;

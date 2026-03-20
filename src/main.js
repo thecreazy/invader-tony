@@ -1,9 +1,10 @@
 /**
  * Application entry point.
- * Boots the router and hands it the #app container.
+ * Boots the background renderer and the router.
+ * ES module scripts are always deferred — the DOM is ready by the time this runs.
  */
 
-import { initRouter }  from './router.js';
+import { initRouter }     from './router.js';
 import { init as initBg } from './background/BackgroundRenderer.js';
 
 const app = document.getElementById('app');
@@ -13,4 +14,4 @@ if (!app) {
 }
 
 initBg();
-initRouter(app);
+initRouter();

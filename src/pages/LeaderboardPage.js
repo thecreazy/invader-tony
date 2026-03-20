@@ -250,7 +250,7 @@ function buildDOM() {
   const backBtn = document.createElement('button');
   backBtn.className = 'lb-back';
   backBtn.textContent = '◄ BACK';
-  backBtn.addEventListener('click', () => navigate('#home'));
+  backBtn.addEventListener('click', () => navigate('/home'));
 
   const hintEl = document.createElement('div');
   hintEl.className = 'lb-hint';
@@ -282,7 +282,7 @@ export function mount(container) {
   _container.appendChild(root);
 
   function onKey(e) {
-    if (e.key === 'Escape') navigate('#home');
+    if (e.key === 'Escape') navigate('/home');
   }
   window.addEventListener('keydown', onKey);
   _removeKey = () => { window.removeEventListener('keydown', onKey); _removeKey = null; };

@@ -550,7 +550,7 @@ export function createGame(canvas, hudElement) {
     hud.showMessage('GAME OVER', 1800);
     sessionStorage.setItem('tony_invaders_final_score', String(gameState.score));
     sessionStorage.setItem('tony_invaders_result', 'game_over');
-    setTimeout(() => navigate('#end'), 1800);
+    setTimeout(() => navigate('/end'), 1800);
   }
 
   function triggerVictory() {
@@ -562,7 +562,7 @@ export function createGame(canvas, hudElement) {
     hud.hideBossBar();
     sessionStorage.setItem('tony_invaders_final_score', String(gameState.score));
     sessionStorage.setItem('tony_invaders_result', 'victory');
-    setTimeout(() => navigate('#end'), 1800);
+    setTimeout(() => navigate('/end'), 1800);
   }
 
   // ── Public API ────────────────────────────────────────────────────────────

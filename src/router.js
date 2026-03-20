@@ -1,100 +1,79 @@
 /**
- * Hash-based SPA router with code splitting via dynamic import().
+ * History API SPA router.
  * Each page module must export mount(container) and unmount().
  */
 
-/** @type {Record<string, () => Promise<any>>} */
-const ROUTE_LOADERS = {
-  '#home':        () => import('./pages/HomePage.js'),
-  '#game':        () => import('./pages/GamePage.js'),
-  '#end':         () => import('./pages/EndPage.js'),
-  '#leaderboard': () => import('./pages/LeaderboardPage.js'),
+import { HomePage }        from './pages/HomePage.js';
+import { GamePage }        from './pages/GamePage.js';
+import { EndPage }         from './pages/EndPage.js';
+import { LeaderboardPage } from './pages/LeaderboardPage.js';
+import { CreditsPage }     from './pages/CreditsPage.js';
+
+/** @type {Record<string, { mount: (el: HTMLElement) => void, unmount: () => void }>} */
+const routes = {
+  '/':            HomePage,
+  '/home':        HomePage,
+  '/game':        GamePage,
+  '/end':         EndPage,
+  '/leaderboard': LeaderboardPage,
+  '/credits':     CreditsPage,
 };
 
-const DEFAULT_ROUTE = '#home';
+/** @type {HTMLElement | null} */
+const app = document.getElementById('app');
 
-/** @type {{ mount: (container: HTMLElement) => void, unmount: () => void } | null} */
+/** @type {{ mount: Function, unmount: Function } | null} */
 let currentPage = null;
 
-/** @type {string} */
-let currentHash = '';
-
-/** @type {HTMLElement | null} */
-let appContainer = null;
-
-/** @type {boolean} */
-let routing = false;
-
 /**
- * Resolves the current hash to a route key, falling back to the default.
- * @returns {string}
+ * @param {string} pathname
  */
-function resolveHash() {
-  const hash = window.location.hash || DEFAULT_ROUTE;
-  return ROUTE_LOADERS[hash] ? hash : DEFAULT_ROUTE;
+function getPageModule(pathname) {
+  return routes[pathname] || routes['/'];
 }
 
 /**
- * Mounts the page matching the current URL hash.
+ * @param {string} pathname
  */
-async function handleRoute() {
-  if (routing) return;
-  routing = true;
-
-  const hash = resolveHash();
-
-  if (hash === currentHash) {
-    routing = false;
-    return;
-  }
-
-  if (currentPage) {
+async function renderPage(pathname) {
+  if (currentPage && typeof currentPage.unmount === 'function') {
     currentPage.unmount();
-    currentPage = null;
   }
+  currentPage = null;
 
-  currentHash = hash;
+  const PageModule = getPageModule(pathname);
+  currentPage = PageModule;
 
-  try {
-    const mod = await ROUTE_LOADERS[hash]();
-    // Support modules that export mount/unmount directly or via a named page object
-    currentPage = typeof mod.mount === 'function'
-      ? mod
-      : (mod.HomePage ?? mod.GamePage ?? mod.EndPage ?? mod.LeaderboardPage ?? mod.default);
-
-    if (appContainer && currentPage) {
-      currentPage.mount(appContainer);
-    }
-  } catch (err) {
-    console.error(`[Router] Failed to load route ${hash}:`, err);
+  if (app) {
+    await PageModule.mount(app);
   }
-
-  routing = false;
 }
 
 /**
- * Navigates to a given hash route.
- * @param {string} hash - e.g. '#game'
+ * Navigates to a path using the History API.
+ * @param {string} path - e.g. '/game'
  */
-export function navigate(hash) {
-  window.location.hash = hash;
+export function navigate(path) {
+  window.history.pushState({}, '', path);
+  renderPage(path);
 }
 
 /**
- * Returns the currently active route hash.
+ * Returns the currently active pathname.
  * @returns {string}
  */
 export function getCurrentRoute() {
-  return currentHash;
+  return window.location.pathname;
 }
 
+window.addEventListener('popstate', () => {
+  renderPage(window.location.pathname);
+});
+
 /**
- * Initialises the router, binding it to the given container element.
+ * Initialises the router, rendering the page matching the current URL.
  * Call once on app startup.
- * @param {HTMLElement} container
  */
-export function initRouter(container) {
-  appContainer = container;
-  window.addEventListener('hashchange', handleRoute);
-  handleRoute();
+export function initRouter() {
+  renderPage(window.location.pathname);
 }

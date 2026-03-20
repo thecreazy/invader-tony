@@ -41,8 +41,9 @@ let menuEls = [];
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MENU_ITEMS = [
-  { label: 'PLAY GAME',   route: '#game' },
-  { label: 'HIGH SCORES', route: '#leaderboard' },
+  { label: 'PLAY GAME',   route: '/game' },
+  { label: 'HIGH SCORES', route: '/leaderboard' },
+  { label: 'CREDITS',     route: '/credits' },
 ];
 
 const ASCII_ART = `▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄

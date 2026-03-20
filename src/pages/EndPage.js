@@ -331,7 +331,7 @@ function buildDOM(score, isWin) {
 
   function onKeyDown(e) {
     if (submitted) {
-      if (e.key === 'Enter' || e.key === ' ') navigate('#game');
+      if (e.key === 'Enter' || e.key === ' ') navigate('/game');
       return;
     }
     if (e.key === 'Backspace') {
@@ -349,12 +349,12 @@ function buildDOM(score, isWin) {
 
   playAgainBtn.addEventListener('click', () => {
     if (!submitted) submitScore();
-    navigate('#game');
+    navigate('/game');
   });
 
   leaderboardBtn.addEventListener('click', () => {
     if (!submitted) submitScore();
-    navigate('#leaderboard');
+    navigate('/leaderboard');
   });
 
   _cleanupInput = () => {

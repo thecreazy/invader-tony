@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Allow: /how-to-play
+Allow: /leaderboard-public
+Disallow: /game
+Disallow: /end
+Disallow: /home
+Sitemap: https://invadertony.vercel.app/sitemap.xml

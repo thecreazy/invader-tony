@@ -1,9 +1,10 @@
 /**
  * History API SPA router.
+ * Handles only in-app routes (/home, /game, /end, /credits, /leaderboard).
+ * "/" and static SEO pages are served as plain HTML from public/ — outside this router.
  * Each page module must export mount(container) and unmount().
  */
 
-import { LandingPage }     from './pages/LandingPage.js';
 import { HomePage }        from './pages/HomePage.js';
 import { GamePage }        from './pages/GamePage.js';
 import { EndPage }         from './pages/EndPage.js';
@@ -13,7 +14,6 @@ import { updateMeta }      from './services/seo.js';
 
 /** @type {Record<string, { mount: (el: HTMLElement) => void, unmount: () => void }>} */
 const routes = {
-  '/':            LandingPage,
   '/home':        HomePage,
   '/game':        GamePage,
   '/end':         EndPage,
@@ -30,22 +30,21 @@ let currentPage = null;
 /**
  * @param {string} pathname
  */
-function getPageModule(pathname) {
-  return routes[pathname] || routes['/'];
-}
-
-/**
- * @param {string} pathname
- */
 async function renderPage(pathname) {
   if (currentPage && typeof currentPage.unmount === 'function') {
     currentPage.unmount();
   }
   currentPage = null;
 
-  updateMeta(pathname);
+  const PageModule = routes[pathname];
 
-  const PageModule = getPageModule(pathname);
+  // Unknown route — send to /home
+  if (!PageModule) {
+    navigate('/home');
+    return;
+  }
+
+  updateMeta(pathname);
   currentPage = PageModule;
 
   if (app) {

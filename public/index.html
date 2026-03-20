@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>InvaderTony — Spara a Tony Pitony nel Gioco Arcade Gratuito</title>
+  <meta name="description" content="Spara a Tony Pitony prima che ti denunci! Gioco arcade gratuito nel browser. 4 wave, boss fight, classifica globale. Fatto con Three.js e Claude AI.">
+  <meta name="keywords" content="Tony Pitony, gioco arcade, browser game, space invaders, musica italiana, gioco gratis, three.js, InvaderTony">
+  <meta name="author" content="Riccardo Canella">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://invadertony.vercel.app/">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://invadertony.vercel.app/">
+  <meta property="og:title" content="InvaderTony — Spara a Tony Pitony nel Gioco Arcade Gratuito">
+  <meta property="og:description" content="Gioco arcade gratuito nel browser dedicato a Tony Pitony. 4 wave, boss fight, classifica globale.">
+  <meta property="og:image" content="https://invadertony.vercel.app/og-image.png">
+  <meta property="og:locale" content="it_IT">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="InvaderTony — Spara a Tony Pitony">
+  <meta name="twitter:description" content="Gioco arcade gratuito nel browser. Sparagli prima che ti denunci.">
+  <meta name="twitter:image" content="https://invadertony.vercel.app/og-image.png">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "VideoGame",
+    "name": "InvaderTony",
+    "description": "Gioco arcade browser ispirato a Tony Pitony. Variante di Space Invaders realizzata con Three.js e GLSL shaders.",
+    "genre": "Arcade",
+    "gamePlatform": "Web Browser",
+    "applicationCategory": "Game",
+    "operatingSystem": "Any",
+    "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" },
+    "author": { "@type": "Person", "name": "Riccardo Canella" },
+    "url": "https://invadertony.vercel.app"
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/assets/tony_enemy1.png" type="image/png">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --bg2: #0f0f18;
+      --cyan: #00ffff;
+      --magenta: #ff00ff;
+      --yellow: #ffff00;
+      --green: #39ff14;
+      --text: #e8e8f0;
+      --dim: #6a6a8a;
+      --border: rgba(255,255,255,0.08);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+      overflow-x: hidden;
+    }
+
+    /* HERO */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 80px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        0deg, transparent, transparent 2px,
+        rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 3px
+      );
+      pointer-events: none;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      pointer-events: none;
+    }
+    .blob-cyan    { width:600px; height:600px; top:-100px; left:-150px; background:rgba(0,255,255,0.06); animation: driftA 15s ease-in-out infinite alternate; }
+    .blob-magenta { width:500px; height:500px; bottom:-100px; right:-100px; background:rgba(255,0,255,0.05); animation: driftB 18s ease-in-out infinite alternate; }
+    .blob-yellow  { width:400px; height:400px; top:40%; right:20%; background:rgba(255,255,0,0.04); animation: driftC 12s ease-in-out infinite alternate; }
+
+    @keyframes driftA { to { transform: translate(40px, 30px); } }
+    @keyframes driftB { to { transform: translate(-50px, 20px); } }
+    @keyframes driftC { to { transform: translate(30px, -40px); } }
+
+    .badge {
+      display: inline-block;
+      border: 1px solid var(--cyan);
+      color: var(--cyan);
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      padding: 6px 14px;
+      border-radius: 2px;
+      letter-spacing: 0.1em;
+      margin-bottom: 32px;
+      animation: fadeInDown 0.6s ease 0.2s both;
+    }
+
+    h1.game-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(36px, 8vw, 88px);
+      line-height: 1.2;
+      margin-bottom: 24px;
+      animation: fadeInUp 0.8s ease 0.3s both;
+    }
+    h1.game-title .line1 { display: block; color: var(--cyan);    text-shadow: 0 0 40px rgba(0,255,255,0.4); }
+    h1.game-title .line2 { display: block; color: var(--magenta); text-shadow: 0 0 40px rgba(255,0,255,0.4); }
+
+    .subtitle {
+      font-size: clamp(14px, 2vw, 18px);
+      color: var(--text);
+      max-width: 480px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+      animation: fadeInUp 0.8s ease 0.5s both;
+    }
+
+    .cta-group {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: fadeInUp 0.8s ease 0.7s both;
+    }
+
+    .btn-primary {
+      background: var(--cyan);
+      color: #000;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px;
+      padding: 16px 32px;
+      border: none;
+      border-radius: 2px;
+      cursor: pointer;
+      box-shadow: 0 0 24px rgba(0,255,255,0.35);
+      text-decoration: none;
+      display: inline-block;
+      transition: box-shadow 0.15s, transform 0.15s;
+    }
+    .btn-primary:hover { box-shadow: 0 0 48px rgba(0,255,255,0.6); transform: translateY(-2px); }
+
+    .btn-secondary {
+      background: transparent;
+      border: 2px solid var(--border);
+      color: var(--dim);
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      padding: 16px 28px;
+      border-radius: 2px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-secondary:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      color: var(--dim);
+    }
+    .scroll-hint span  { display: block; font-size: 20px; animation: bounce 1.5s ease-in-out infinite; }
+    .scroll-hint small { font-family: 'Space Mono'; font-size: 9px; letter-spacing: 0.2em; }
+    @keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(8px)} }
+
+    /* SECTIONS */
+    section { padding: 100px 20px; }
+    section:nth-child(even) { background: var(--bg2); }
+
+    .section-label {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      margin-bottom: 48px;
+      display: block;
+      text-align: center;
+    }
+
+    .inner { max-width: 960px; margin: 0 auto; }
+
+    /* PREVIEW SECTION */
+    .preview-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    .preview-frame {
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      aspect-ratio: 16/9;
+      background: #000;
+      overflow: hidden;
+      box-shadow: 0 0 0 1px rgba(0,255,255,0.1), 0 0 40px rgba(0,255,255,0.05);
+    }
+    .preview-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .preview-placeholder {
+      width: 100%; height: 100%;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 8px;
+    }
+    .preview-placeholder span { font-family: 'Press Start 2P'; font-size: 9px; color: var(--dim); }
+
+    .feature-list h2 { font-family:'Press Start 2P'; font-size:13px; color:var(--text); margin-bottom:32px; }
+    .feature        { display:flex; gap:16px; align-items:flex-start; margin-bottom:28px; }
+    .feature-icon   { font-size:24px; flex-shrink:0; margin-top:2px; }
+    .feature-title  { font-family:'Press Start 2P'; font-size:9px; margin-bottom:8px; display:block; }
+    .feature-text   { font-size:12px; color:var(--dim); line-height:1.6; }
+
+    /* HOW TO PLAY */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 800px;
+      margin: 0 auto 32px;
+    }
+    .card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 24px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .card:hover  { border-color: rgba(0,255,255,0.25); background: rgba(0,255,255,0.02); }
+    .card-icon   { font-family:'Press Start 2P'; font-size:16px; margin-bottom:12px; display:block; }
+    .card-title  { font-family:'Press Start 2P'; font-size:9px; color:var(--text); margin-bottom:8px; display:block; }
+    .card-text   { font-size:11px; color:var(--dim); line-height:1.6; }
+
+    .link-more {
+      display: block;
+      text-align: center;
+      font-family: 'Space Mono';
+      font-size: 12px;
+      color: var(--cyan);
+      text-decoration: none;
+      margin-top: 32px;
+      letter-spacing: 0.05em;
+    }
+    .link-more:hover { color: var(--magenta); }
+
+    /* LEADERBOARD */
+    .podium { display:flex; gap:20px; justify-content:center; flex-wrap:wrap; }
+    .podium-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 28px 24px;
+      text-align: center;
+      min-width: 160px;
+    }
+    .podium-card.gold   { border-color: rgba(255,215,0,0.3); box-shadow: 0 0 24px rgba(255,215,0,0.08); }
+    .podium-card.silver { border-color: rgba(192,192,192,0.2); }
+    .podium-card.bronze { border-color: rgba(205,127,50,0.2); }
+    .podium-rank  { font-family:'Press Start 2P'; font-size:22px; display:block; margin-bottom:12px; }
+    .rank-gold    { color: #FFD700; }
+    .rank-silver  { color: #C0C0C0; }
+    .rank-bronze  { color: #CD7F32; }
+    .podium-name  { font-family:'Press Start 2P'; font-size:9px; color:var(--text); display:block; margin-bottom:8px; }
+    .podium-score { font-family:'Space Mono'; font-size:16px; color:var(--cyan); display:block; }
+    .empty-lb { text-align:center; font-family:'Press Start 2P'; font-size:10px; color:var(--dim); line-height:2; }
+
+    /* FOOTER */
+    footer {
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      padding: 48px 20px;
+      text-align: center;
+    }
+    .footer-title { font-family:'Press Start 2P'; font-size:10px; color:var(--dim); }
+    .footer-sub   { font-size:11px; color:var(--dim); margin-top:8px; }
+    .footer-nav   { display:flex; gap:24px; justify-content:center; flex-wrap:wrap; margin-top:24px; }
+    .footer-nav a { font-size:11px; color:var(--dim); text-decoration:none; }
+    .footer-nav a:hover { color: var(--cyan); }
+    .footer-copy  { font-size:9px; color:var(--dim); margin-top:16px; }
+
+    /* ANIMATIONS */
+    @keyframes fadeInUp   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes fadeInDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
+
+    .animate-in { opacity:0; transform:translateY(24px); transition:opacity 0.6s ease, transform 0.6s ease; }
+    .animate-in.visible { opacity:1; transform:translateY(0); }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      h1.game-title { font-size: clamp(28px, 10vw, 48px); }
+      .cta-group { flex-direction: column; align-items: center; }
+      .btn-primary, .btn-secondary { width: 100%; max-width: 280px; text-align: center; }
+      .preview-grid { grid-template-columns: 1fr; }
+      .cards-grid   { grid-template-columns: 1fr; }
+      .podium       { flex-direction: column; align-items: center; }
+      .footer-nav   { flex-direction: column; gap: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="blob blob-cyan"></div>
+    <div class="blob blob-magenta"></div>
+    <div class="blob blob-yellow"></div>
+
+    <span class="badge">🕹 GIOCO ARCADE GRATUITO</span>
+
+    <h1 class="game-title">
+      <span class="line1">INVADER</span>
+      <span class="line2">TONY</span>
+    </h1>
+
+    <p class="subtitle">Spara a Tony Pitony prima che ti denunci.</p>
+
+    <div class="cta-group">
+      <a href="/home" class="btn-primary">► GIOCA ORA</a>
+      <a href="#how-to-play" class="btn-secondary">COME SI GIOCA</a>
+    </div>
+
+    <div class="scroll-hint">
+      <span>↓</span>
+      <small>SCOPRI</small>
+    </div>
+  </section>
+
+  <!-- PREVIEW -->
+  <section id="preview">
+    <div class="inner">
+      <span class="section-label animate-in" style="color:var(--yellow)">GAMEPLAY</span>
+      <div class="preview-grid">
+        <div class="preview-frame animate-in">
+          <img src="/assets/gameplay.gif" alt="InvaderTony gameplay - spara ai cloni di Tony Pitony"
+               onerror="this.parentElement.innerHTML='<div class=preview-placeholder><span>[ GAMEPLAY GIF ]</span></div>'">
+        </div>
+        <div class="feature-list animate-in" style="transition-delay:0.15s">
+          <h2>CHE COS'È?</h2>
+          <div class="feature">
+            <span class="feature-icon">👾</span>
+            <div>
+              <span class="feature-title" style="color:var(--cyan)">55 CLONI DI TONY</span>
+              <p class="feature-text">4 wave di nemici sempre più agguerriti. Tony in suit grigio e Tony in jumpsuit Elvis. Difficoltà crescente.</p>
+            </div>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">⚡</span>
+            <div>
+              <span class="feature-title" style="color:var(--magenta)">BOSS FIGHT FINALE</span>
+              <p class="feature-text">Tony Pitony in persona. 3 fasi di attacco. Cita le sue canzoni mentre ti spara addosso. 25 HP. Buona fortuna.</p>
+            </div>
+          </div>
+          <div class="feature">
+            <span class="feature-icon">🎮</span>
+            <div>
+              <span class="feature-title" style="color:var(--yellow)">MOTORE 3D + SHADERS</span>
+              <p class="feature-text">Costruito con Three.js, shader GLSL custom, effetti CRT, shockwave radiale sulle esplosioni e starfield procedurale.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW TO PLAY -->
+  <section id="how-to-play">
+    <div class="inner">
+      <span class="section-label animate-in" style="color:var(--green)">COME SI GIOCA</span>
+      <div class="cards-grid">
+        <div class="card animate-in">
+          <span class="card-icon" style="color:var(--cyan)">← →</span>
+          <span class="card-title">MUOVITI</span>
+          <p class="card-text">Frecce sinistra/destra o A/D per muovere la navicella spaziale.</p>
+        </div>
+        <div class="card animate-in" style="transition-delay:0.1s">
+          <span class="card-icon" style="color:var(--yellow);font-size:10px">SPACE</span>
+          <span class="card-title">SPARA</span>
+          <p class="card-text">Barra spaziatrice per sparare ai cloni di Tony Pitony.</p>
+        </div>
+        <div class="card animate-in" style="transition-delay:0.2s">
+          <span class="card-icon" style="color:var(--magenta)">×4</span>
+          <span class="card-title">4 WAVE</span>
+          <p class="card-text">Ogni wave è più veloce e i nemici elite sparano di più.</p>
+        </div>
+        <div class="card animate-in" style="transition-delay:0.3s">
+          <span class="card-icon" style="color:var(--green)">!</span>
+          <span class="card-title">BOSS FINALE</span>
+          <p class="card-text">Tony Pitony in persona — 25 HP, 3 fasi, cita le sue canzoni.</p>
+        </div>
+      </div>
+      <a href="/how-to-play" class="link-more animate-in">GUIDA COMPLETA →</a>
+    </div>
+  </section>
+
+  <!-- LEADERBOARD PREVIEW -->
+  <section id="leaderboard-preview">
+    <div class="inner" style="text-align:center">
+      <span class="section-label animate-in" style="color:var(--yellow)">HALL OF FAME</span>
+      <p class="animate-in" style="font-size:13px;color:var(--dim);margin-bottom:40px">I MIGLIORI TONY SLAYERS</p>
+      <div id="podium-container" class="animate-in">
+        <p class="empty-lb">ANCORA NESSUN PUNTEGGIO<br>SII IL PRIMO!</p>
+      </div>
+      <script>
+        try {
+          const raw = localStorage.getItem('tony_invaders_scores');
+          const scores = raw ? JSON.parse(raw) : [];
+          const top3 = scores.slice(0, 3);
+          if (top3.length > 0) {
+            const classes     = ['gold', 'silver', 'bronze'];
+            const ranks       = ['#1', '#2', '#3'];
+            const rankClasses = ['rank-gold', 'rank-silver', 'rank-bronze'];
+            const html = '<div class="podium">' + top3.map((s, i) => `
+              <div class="podium-card ${classes[i]}">
+                <span class="podium-rank ${rankClasses[i]}">${ranks[i]}</span>
+                <span class="podium-name">${s.name}</span>
+                <span class="podium-score">${String(s.score).padStart(6,'0')}</span>
+              </div>`).join('') + '</div>';
+            document.getElementById('podium-container').innerHTML = html;
+          }
+        } catch(e) {}
+      </script>
+      <a href="/leaderboard-public" class="link-more animate-in" style="margin-top:32px">TUTTA LA CLASSIFICA →</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p class="footer-title">INVADER TONY</p>
+    <p class="footer-sub">FATTO CON ♥ E TANTA PAURA DI ESSERE DENUNCIATO</p>
+    <nav class="footer-nav" aria-label="Navigazione">
+      <a href="/home">GIOCA</a>
+      <a href="/leaderboard-public">CLASSIFICA</a>
+      <a href="/how-to-play">COME SI GIOCA</a>
+      <a href="/credits">CREDITS</a>
+    </nav>
+    <p class="footer-copy">© 2025 RICCARDO CANELLA — OPEN SOURCE SU GITHUB</p>
+  </footer>
+
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.animate-in').forEach(el => observer.observe(el));
+  </script>
+
+</body>
+</html>

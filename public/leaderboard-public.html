@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Classifica — InvaderTony | Hall of Fame</title>
+  <meta name="description" content="La classifica dei migliori giocatori di InvaderTony. Sconfiggi Tony Pitony e scala la Hall of Fame.">
+  <meta name="author" content="Riccardo Canella">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://invadertony.vercel.app/leaderboard-public">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://invadertony.vercel.app/leaderboard-public">
+  <meta property="og:title" content="Classifica InvaderTony — Hall of Fame">
+  <meta property="og:description" content="I migliori Tony Slayers. Sconfiggi Tony Pitony e scala la classifica.">
+
+  <script type="application/ld+json" id="lb-schema">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "InvaderTony Hall of Fame",
+    "description": "Classifica dei migliori giocatori di InvaderTony",
+    "url": "https://invadertony.vercel.app/leaderboard-public",
+    "itemListElement": []
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/assets/tony_enemy1.png" type="image/png">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f; --bg2: #0f0f18;
+      --cyan: #00ffff; --magenta: #ff00ff; --yellow: #ffff00; --green: #39ff14;
+      --text: #e8e8f0; --dim: #6a6a8a; --border: rgba(255,255,255,0.08);
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Space Mono', monospace; }
+
+    .page-wrap { max-width: 640px; margin: 0 auto; padding: 60px 20px; }
+
+    .back-link {
+      display: inline-block; font-size: 10px; color: var(--dim);
+      text-decoration: none; margin-bottom: 48px; letter-spacing: 0.08em;
+    }
+    .back-link:hover { color: var(--cyan); }
+
+    h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(16px, 3vw, 28px);
+      color: var(--yellow);
+      text-shadow: 0 0 24px rgba(255,255,0,0.4);
+      margin-bottom: 12px;
+    }
+    h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 11px;
+      color: var(--cyan);
+      margin-bottom: 40px;
+      letter-spacing: 0.1em;
+    }
+
+    /* SCORES TABLE */
+    .scores-table { width: 100%; border-collapse: collapse; }
+    .scores-table thead tr { border-bottom: 2px solid var(--border); }
+    .scores-table th {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      color: var(--dim);
+      padding: 0 12px 16px;
+      text-align: left;
+      letter-spacing: 0.12em;
+    }
+    .scores-table th:last-child { text-align: right; }
+    .scores-table td {
+      padding: 14px 12px;
+      font-size: 13px;
+      border-bottom: 1px solid var(--border);
+    }
+    .scores-table td.rank {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      width: 60px;
+    }
+    .scores-table td.name { font-family: 'Press Start 2P', monospace; font-size: 9px; color: var(--text); }
+    .scores-table td.score { text-align: right; color: var(--cyan); font-variant-numeric: tabular-nums; }
+    .scores-table tr:last-child td { border-bottom: none; }
+    .scores-table tr.row-even { background: rgba(255,255,255,0.02); }
+
+    .rank-1 { color: #FFD700; }
+    .rank-2 { color: #C0C0C0; }
+    .rank-3 { color: #CD7F32; }
+    .rank-other { color: var(--dim); }
+
+    .empty-msg {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      color: var(--dim);
+      text-align: center;
+      padding: 48px 0;
+      line-height: 2;
+    }
+
+    /* CTA */
+    .cta-row {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 48px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+    .btn-primary {
+      background: var(--cyan); color: #000;
+      font-family: 'Press Start 2P', monospace; font-size: 11px;
+      padding: 14px 28px; border: none; border-radius: 2px;
+      cursor: pointer; text-decoration: none; display: inline-block;
+      box-shadow: 0 0 20px rgba(0,255,255,0.3);
+      transition: box-shadow 0.15s, transform 0.15s;
+    }
+    .btn-primary:hover { box-shadow: 0 0 40px rgba(0,255,255,0.55); transform: translateY(-2px); }
+    .btn-back {
+      background: transparent; border: 2px solid var(--border);
+      color: var(--dim); font-family: 'Space Mono', monospace; font-size: 11px;
+      padding: 14px 24px; border-radius: 2px;
+      text-decoration: none; display: inline-block;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-back:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    footer { border-top: 1px solid var(--border); padding: 32px 20px; text-align: center; margin-top: 60px; }
+    footer a { font-size: 10px; color: var(--dim); text-decoration: none; margin: 0 12px; }
+    footer a:hover { color: var(--cyan); }
+
+    @media (max-width: 480px) {
+      .cta-row { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-wrap">
+
+    <a href="/" class="back-link">← TORNA AL MENU</a>
+
+    <h1>HALL OF FAME</h1>
+    <h2>TOP TONY SLAYERS</h2>
+
+    <div id="scores-list">
+      <p class="empty-msg">ANCORA NESSUN PUNTEGGIO<br>SIATE I PRIMI!</p>
+    </div>
+
+    <div class="cta-row">
+      <a href="/home" class="btn-primary">► GIOCA ORA</a>
+      <a href="/"     class="btn-back">← TORNA AL MENU</a>
+    </div>
+
+  </div>
+
+  <footer>
+    <a href="/">HOME</a>
+    <a href="/how-to-play">COME SI GIOCA</a>
+    <a href="/credits">CREDITS</a>
+  </footer>
+
+  <script>
+    try {
+      const raw    = localStorage.getItem('tony_invaders_scores');
+      const scores = raw ? JSON.parse(raw) : [];
+
+      if (scores.length > 0) {
+        const rankClass = ['rank-1','rank-2','rank-3'];
+        const rankLabel = ['#1','#2','#3'];
+
+        const rows = scores.map((s, i) => {
+          const rc   = rankClass[i] || 'rank-other';
+          const rank = rankLabel[i] || `#${i+1}`;
+          const even = i % 2 === 1 ? ' row-even' : '';
+          return `<tr class="${even}">
+            <td class="rank ${rc}">${rank}</td>
+            <td class="name">${s.name.slice(0,8).toUpperCase()}</td>
+            <td class="score">${String(s.score).padStart(6,'0')}</td>
+          </tr>`;
+        }).join('');
+
+        document.getElementById('scores-list').innerHTML = `
+          <table class="scores-table">
+            <thead>
+              <tr>
+                <th>RANK</th>
+                <th>NOME</th>
+                <th>PUNTEGGIO</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>`;
+
+        // Update JSON-LD with real data
+        const schemaEl = document.getElementById('lb-schema');
+        const schema   = JSON.parse(schemaEl.textContent);
+        schema.itemListElement = scores.map((s, i) => ({
+          '@type': 'ListItem',
+          position: i + 1,
+          name: s.name,
+          description: `Score: ${s.score}`,
+        }));
+        schemaEl.textContent = JSON.stringify(schema);
+      }
+    } catch(e) {}
+  </script>
+
+</body>
+</html>

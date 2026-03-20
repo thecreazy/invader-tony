@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Come si Gioca a InvaderTony — Guida Completa</title>
+  <meta name="description" content="Guida completa per giocare a InvaderTony. Controlli, nemici, wave, boss fight. Impara a sconfiggere Tony Pitony.">
+  <meta name="author" content="Riccardo Canella">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://invadertony.vercel.app/how-to-play">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://invadertony.vercel.app/how-to-play">
+  <meta property="og:title" content="Come si Gioca a InvaderTony — Guida Completa">
+  <meta property="og:description" content="Guida completa per giocare a InvaderTony. Controlli, nemici, wave, boss fight.">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "HowTo",
+    "name": "Come si Gioca a InvaderTony",
+    "description": "Guida completa per giocare a InvaderTony: controlli, nemici, wave e boss fight.",
+    "step": [
+      { "@type": "HowToStep", "name": "Muoviti",  "text": "Usa le frecce sinistra/destra o A/D per muovere la navicella spaziale." },
+      { "@type": "HowToStep", "name": "Spara",    "text": "Premi la barra spaziatrice per sparare ai cloni di Tony Pitony." },
+      { "@type": "HowToStep", "name": "Supera le wave", "text": "Elimina tutti i nemici di ogni wave. Ci sono 4 wave di difficoltà crescente." },
+      { "@type": "HowToStep", "name": "Sconfiggi il boss", "text": "Dopo la quarta wave affronta Tony Pitony in persona: 25 HP e 3 fasi di attacco." }
+    ]
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/assets/tony_enemy1.png" type="image/png">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f; --bg2: #0f0f18;
+      --cyan: #00ffff; --magenta: #ff00ff; --yellow: #ffff00; --green: #39ff14;
+      --text: #e8e8f0; --dim: #6a6a8a; --border: rgba(255,255,255,0.08);
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Space Mono', monospace; }
+
+    .page-wrap { max-width: 800px; margin: 0 auto; padding: 60px 20px; }
+
+    .back-link {
+      display: inline-block;
+      font-size: 10px;
+      color: var(--dim);
+      text-decoration: none;
+      margin-bottom: 48px;
+      letter-spacing: 0.08em;
+    }
+    .back-link:hover { color: var(--cyan); }
+
+    h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(16px, 3vw, 28px);
+      color: var(--cyan);
+      text-shadow: 0 0 24px rgba(0,255,255,0.4);
+      margin-bottom: 48px;
+      line-height: 1.4;
+    }
+
+    h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 12px;
+      margin: 48px 0 24px;
+      letter-spacing: 0.1em;
+    }
+
+    p, li { font-size: 13px; color: var(--dim); line-height: 1.9; }
+
+    /* CONTROLS TABLE */
+    .controls-table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+    .controls-table td { padding: 12px 16px; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .controls-table td:first-child {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      color: var(--cyan);
+      white-space: nowrap;
+      width: 40%;
+    }
+    .controls-table tr:last-child td { border-bottom: none; }
+
+    /* ENEMY CARDS */
+    .enemy-grid {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .enemy-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 24px;
+      text-align: center;
+      flex: 1;
+      min-width: 140px;
+    }
+    .enemy-card img {
+      image-rendering: pixelated;
+      width: 64px;
+      height: auto;
+      display: block;
+      margin: 0 auto 16px;
+      filter: drop-shadow(0 0 6px rgba(57,255,20,0.4));
+    }
+    .enemy-label {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* BOSS SECTION */
+    .boss-card {
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+      background: rgba(255,0,68,0.04);
+      border: 1px solid rgba(255,0,68,0.2);
+      border-radius: 4px;
+      padding: 28px;
+      margin-top: 16px;
+    }
+    .boss-card img {
+      image-rendering: pixelated;
+      width: 80px;
+      height: auto;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 8px rgba(255,0,68,0.5));
+    }
+
+    /* TIPS */
+    ul { padding-left: 0; list-style: none; margin-top: 16px; }
+    ul li { padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+    ul li::before { content: '▸ '; color: var(--green); font-family: monospace; }
+    ul li:last-child { border-bottom: none; }
+
+    /* CTA */
+    .cta-wrap { text-align: center; margin-top: 64px; padding-top: 48px; border-top: 1px solid var(--border); }
+    .btn-primary {
+      background: var(--cyan); color: #000;
+      font-family: 'Press Start 2P', monospace; font-size: 12px;
+      padding: 16px 32px; border: none; border-radius: 2px;
+      cursor: pointer; text-decoration: none; display: inline-block;
+      box-shadow: 0 0 24px rgba(0,255,255,0.35);
+      transition: box-shadow 0.15s, transform 0.15s;
+    }
+    .btn-primary:hover { box-shadow: 0 0 48px rgba(0,255,255,0.6); transform: translateY(-2px); }
+
+    /* FOOTER */
+    footer { border-top: 1px solid var(--border); padding: 32px 20px; text-align: center; margin-top: 80px; }
+    footer a { font-size: 10px; color: var(--dim); text-decoration: none; margin: 0 12px; }
+    footer a:hover { color: var(--cyan); }
+
+    @media (max-width: 600px) {
+      .boss-card { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="page-wrap">
+
+    <a href="/" class="back-link">← TORNA AL MENU</a>
+
+    <h1>COME SI GIOCA</h1>
+
+    <!-- CONTROLLI -->
+    <section>
+      <h2 style="color:var(--cyan)">CONTROLLI</h2>
+      <table class="controls-table">
+        <tr><td>← → / A D</td><td>Muovi la navicella sinistra e destra</td></tr>
+        <tr><td>SPAZIO</td><td>Spara un proiettile verso l'alto</td></tr>
+        <tr><td>↑ ↓ / ENTER</td><td>Navigazione nei menu</td></tr>
+        <tr><td>ESC</td><td>Torna al menu principale</td></tr>
+      </table>
+      <h2 style="color:var(--yellow);margin-top:32px;font-size:10px">SU MOBILE</h2>
+      <table class="controls-table">
+        <tr><td>ZONA SINISTRA</td><td>Tieni premuto per muoverti a sinistra</td></tr>
+        <tr><td>ZONA DESTRA</td><td>Tieni premuto per muoverti a destra</td></tr>
+        <tr><td>TASTO FIRE</td><td>Spara (centro schermo)</td></tr>
+      </table>
+    </section>
+
+    <!-- OBIETTIVO -->
+    <section>
+      <h2 style="color:var(--green)">OBIETTIVO</h2>
+      <p>Elimina tutti i cloni di Tony Pitony prima che raggiungano la tua navicella.
+         Hai 3 vite. Ogni proiettile nemico che ti colpisce ne toglie una.</p>
+      <p style="margin-top:12px">Ci sono 4 wave di difficoltà crescente: i nemici diventano più veloci
+         e sparano con maggiore frequenza. Dopo l'ultima wave arriva il boss finale.</p>
+    </section>
+
+    <!-- I NEMICI -->
+    <section>
+      <h2 style="color:var(--magenta)">I NEMICI</h2>
+      <div class="enemy-grid">
+        <div class="enemy-card">
+          <img src="/assets/tony_enemy1.png" alt="Tony base — nemico standard">
+          <p class="enemy-label">TONY BASE<br>10 PUNTI</p>
+        </div>
+        <div class="enemy-card">
+          <img src="/assets/tony_enemy2.png" alt="Tony Elite — nemico avanzato">
+          <p class="enemy-label">TONY ELITE<br>30 PUNTI</p>
+        </div>
+      </div>
+      <p style="margin-top:20px">I Tony Elite si trovano nelle prime righe della griglia.
+         Sparano più spesso e valgono tre volte i punti dei Tony base.</p>
+    </section>
+
+    <!-- IL BOSS -->
+    <section>
+      <h2 style="color:var(--yellow)">IL BOSS</h2>
+      <div class="boss-card">
+        <img src="/assets/tony_boss.png" alt="Tony Pitony boss finale">
+        <div>
+          <p><strong style="color:var(--text)">Tony Pitony in persona.</strong>
+             25 HP totali, 3 fasi di comportamento distinte.</p>
+          <p style="margin-top:12px">
+            <strong style="color:var(--cyan)">FASE 1</strong> — Ventaglio di proiettili a spirale.<br>
+            <strong style="color:var(--magenta)">FASE 2</strong> — Cerchio di proiettili + tiro mirato.<br>
+            <strong style="color:var(--yellow)">FASE 3</strong> — TONY MODE. Tutto diventa caotico.
+          </p>
+          <p style="margin-top:12px">Nella fase 3 l'intero schermo cambia aspetto
+             e i pattern di attacco si intensificano. Buona fortuna.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CUNSIGLI -->
+    <section>
+      <h2 style="color:var(--green)">CUNSIGLI</h2>
+      <ul>
+        <li>Muviti sempri, non stari fermu o ti sparano</li>
+        <li>I Tony Elite stanno in cima — eliminali per primi per ridurre il fuoco nemico</li>
+        <li>Nella Wave 4 i nemici si muovono quasi il doppio della velocità iniziale</li>
+        <li>Il boss nella fase 3 è un casino — concentrati sugli schemi e non sul panico</li>
+        <li>Le esplosioni non fanno danni — usale come riferimento visivo</li>
+      </ul>
+    </section>
+
+    <div class="cta-wrap">
+      <a href="/home" class="btn-primary">► GIOCA ORA</a>
+    </div>
+
+  </div>
+
+  <footer>
+    <a href="/">HOME</a>
+    <a href="/leaderboard-public">CLASSIFICA</a>
+    <a href="/credits">CREDITS</a>
+  </footer>
+
+</body>
+</html>

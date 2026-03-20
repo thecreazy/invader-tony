@@ -10,7 +10,7 @@
 const PAGE_META = {
   '/': {
     title: 'InvaderTony — Gioco Arcade Gratuito | Tributo a TonyPitony',
-    description: 'Spara a Tony Pitony prima che ti denunci. Gioco arcade gratuito nel browser: 4 wave di nemici, boss fight finale, shaders GLSL e audio procedurale. Fatto con Three.js.',
+    description: 'Spara a Tony Pitony prima che mi denunci. Gioco arcade gratuito nel browser: 4 wave di nemici, boss fight finale, shaders GLSL e audio procedurale. Fatto con Three.js.',
     canonical: 'https://invadertony.vercel.app/',
   },
   '/home': {

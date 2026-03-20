@@ -26,9 +26,6 @@ let attractTimer = null;
 /** @type {ReturnType<typeof setInterval> | null} */
 let glitchInterval = null;
 
-/** @type {string} */
-let originalAscii = '';
-
 /** @type {HTMLElement | null} */
 let asciiEl = null;
 
@@ -427,11 +424,11 @@ function buildDOM() {
   sep.className = 'home-title-sep';
   sep.textContent = '══════════════════════════════════';
 
-  // C — ASCII art
-  asciiEl = document.createElement('pre');
+  // C — Sprite
+  asciiEl = document.createElement('img');
   asciiEl.className = 'home-ascii';
-  asciiEl.textContent = ASCII_ART;
-  originalAscii = ASCII_ART;
+  asciiEl.src = '/assets/tony_enemy1.png';
+  asciiEl.alt = 'Tony Pitony';
 
   // D — Menu
   const menu = document.createElement('div');
@@ -546,7 +543,6 @@ export function unmount() {
   root = null;
   _container = null;
   asciiEl = null;
-  originalAscii = '';
   portraitOverlay = null;
   menuEls = [];
 

@@ -48,6 +48,7 @@ export function createGame(canvas, hudElement) {
   // ── Post-processing ────────────────────────────────────────────────────────
   let rtPingA, rtPingB;
   let screenScene, screenCamera, screenQuad;
+  let swScene, swQuad; // dedicated scene for shockwave passes (never mixes with scanlinesMaterial)
   let scanlinesMaterial;
   const shockwavePool = [];
   let tonyModeActive = false;
@@ -166,6 +167,14 @@ export function createGame(canvas, hudElement) {
 
     screenQuad = new THREE.Mesh(quadGeom, scanlinesMaterial);
     screenScene.add(screenQuad);
+
+    // Dedicated scene for shockwave passes — never contains scanlinesMaterial,
+    // so setting its render target to rtPingA/B while scanlinesMaterial still
+    // references one of those textures can never form a feedback loop.
+    swScene = new THREE.Scene();
+    swQuad  = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
+    swQuad.frustumCulled = false;
+    swScene.add(swQuad);
 
     for (let i = 0; i < SHOCKWAVE_POOL; i++) {
       shockwavePool.push({
@@ -344,12 +353,13 @@ export function createGame(canvas, hudElement) {
     renderer.clear();
     renderer.render(scene, camera);
 
-    // Pass 2: shockwave ping-pong passes
+    // Pass 2: shockwave ping-pong passes.
+    // Uses swScene (contains only swQuad) — never mixed with scanlinesMaterial,
+    // which prevents the WebGL feedback loop that occurred when screenScene
+    // (containing screenQuad with scanlinesMaterial pointing to rtPingA/B texture)
+    // was used as both the render source and framebuffer target during ping-pong swaps.
     let src = rtPingA;
     let dst = rtPingB;
-
-    const swMesh = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
-    swMesh.frustumCulled = false;
 
     for (const slot of shockwavePool) {
       if (!slot.active) continue;
@@ -358,23 +368,18 @@ export function createGame(canvas, hudElement) {
 
       slot.mat.uniforms.uTexture.value  = src.texture;
       slot.mat.uniforms.uProgress.value = slot.progress;
-      swMesh.material = slot.mat;
-      screenScene.add(swMesh);
+      swQuad.material = slot.mat;
 
       renderer.setRenderTarget(dst);
       renderer.clear();
-      renderer.render(screenScene, screenCamera);
-      screenScene.remove(swMesh);
+      renderer.render(swScene, screenCamera);
 
       const tmp = src; src = dst; dst = tmp;
     }
 
-    swMesh.geometry.dispose();
-
     // Pass 3: scanlines → screen
     scanlinesMaterial.uniforms.uTexture.value = src.texture;
     scanlinesMaterial.uniforms.uTime.value   += delta;
-    screenQuad.material = scanlinesMaterial;
     renderer.setRenderTarget(null);
     renderer.clear();
     renderer.render(screenScene, screenCamera);
@@ -640,6 +645,7 @@ export function createGame(canvas, hudElement) {
       scanlinesMaterial?.dispose();
       for (const slot of shockwavePool) slot.mat.dispose();
       screenQuad?.geometry.dispose();
+      swQuad?.geometry.dispose();
 
       starfieldMesh?.geometry.dispose();
       starfieldMaterial?.dispose();

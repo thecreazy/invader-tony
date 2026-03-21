@@ -50,16 +50,22 @@ export function createBossTony(scene, opts) {
   } = opts;
 
   // ── Texture & geometry ────────────────────────────────────────────────────
-  const bossTexture = new THREE.TextureLoader().load('/assets/tony_boss.png');
+  // tony_boss.png has alpha=0 on every pixel (broken export) but correct RGB values.
+  // Since the game background is black space, we render the sprite as opaque —
+  // the black areas are invisible against the black background.
+  const bossTexture = new THREE.TextureLoader().load(
+    '/assets/tony_boss.png',
+    undefined,
+    undefined,
+    (err) => console.error('[BossTony] texture load failed:', err),
+  );
   bossTexture.magFilter = THREE.NearestFilter;
   bossTexture.minFilter = THREE.NearestFilter;
 
   const geom = new THREE.PlaneGeometry(3.5, 4.0);
   const mat  = new THREE.MeshBasicMaterial({
-    map:         bossTexture,
-    transparent: true,
-    alphaTest:   0.1,
-    depthWrite:  false,
+    map:        bossTexture,
+    depthWrite: false,
   });
   const faceMesh = new THREE.Mesh(geom, mat);
 

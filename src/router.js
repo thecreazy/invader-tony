@@ -1,20 +1,18 @@
 /**
  * History API SPA router.
- * Handles only in-app routes (/home, /game, /end, /credits).
- * "/", "/leaderboard", "/how-to-play" are static HTML from public/ — outside this router.
+ * Handles only in-app routes (/home, /game, /end).
+ * "/", "/leaderboard", "/how-to-play", "/credits" are static HTML from public/.
  * Each page module must export mount(container) and unmount().
+ * Pages are loaded lazily via dynamic import — each gets its own JS chunk.
  */
 
-import { HomePage }   from './pages/HomePage.js';
-import { GamePage }   from './pages/GamePage.js';
-import { EndPage }    from './pages/EndPage.js';
 import { updateMeta } from './services/seo.js';
 
-/** @type {Record<string, { mount: (el: HTMLElement) => void, unmount: () => void }>} */
+/** @type {Record<string, () => Promise<any>>} */
 const routes = {
-  '/home': HomePage,
-  '/game': GamePage,
-  '/end':  EndPage,
+  '/home': () => import('./pages/HomePage.js'),
+  '/game': () => import('./pages/GamePage.js'),
+  '/end':  () => import('./pages/EndPage.js'),
 };
 
 /** @type {HTMLElement | null} */
@@ -32,19 +30,23 @@ async function renderPage(pathname) {
   }
   currentPage = null;
 
-  const PageModule = routes[pathname];
+  const loader = routes[pathname];
 
   // Unknown route — send to /home
-  if (!PageModule) {
+  if (!loader) {
     navigate('/home');
     return;
   }
 
   updateMeta(pathname);
-  currentPage = PageModule;
+
+  const mod = await loader();
+  // Pages export { mount, unmount } as named exports or wrapped in a default
+  const page = mod.default || mod;
+  currentPage = page;
 
   if (app) {
-    await PageModule.mount(app);
+    await page.mount(app);
   }
 }
 

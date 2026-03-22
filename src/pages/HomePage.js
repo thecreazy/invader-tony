@@ -293,6 +293,12 @@ export function mount(container) {
 
   updatePortraitOverlay();
   resetAttractTimer();
+
+  // Preload game chunks while the user is on the home screen so /game loads instantly
+  setTimeout(() => {
+    import('../game/Game.js').catch(() => {});
+    import('../systems/AudioManager.js').catch(() => {});
+  }, 1000);
 }
 
 export function unmount() {

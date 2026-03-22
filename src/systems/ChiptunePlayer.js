@@ -7,6 +7,7 @@ export function createChiptunePlayer() {
         audio = new Audio('/assets/donne_ricche.ogg');
         audio.loop = true;
         audio.volume = 0.5;
+        audio.preload = 'none'; // don't fetch until first play()
       }
       audio.play().catch(() => {});
     },

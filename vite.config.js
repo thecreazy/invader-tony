@@ -48,9 +48,33 @@ export default defineConfig({
   ],
   assetsInclude: ['**/*.png', '**/*.jpg', '**/*.jpeg', '**/*.gif', '**/*.svg', '**/*.ogg', '**/*.mp3', '**/*.wav'],
   build: {
+    chunkSizeWarningLimit: 600,
     rollupOptions: {
       input: {
         app: resolve(__dirname, 'app.html'),
+      },
+      output: {
+        manualChunks: {
+          'three': ['three'],
+          'game-engine': [
+            './src/game/Game.js',
+            './src/game/GameState.js',
+            './src/game/CollisionSystem.js',
+            './src/game/WaveManager.js',
+            './src/game/entities/Player.js',
+            './src/game/entities/TonyInvader.js',
+            './src/game/entities/BossTony.js',
+            './src/game/entities/Bullet.js',
+            './src/game/renderer/PostProcessor.js',
+          ],
+          'game-systems': [
+            './src/systems/AudioManager.js',
+            './src/systems/ChiptunePlayer.js',
+            './src/systems/InputManager.js',
+            './src/systems/ParticleSystem.js',
+            './src/background/BackgroundRenderer.js',
+          ],
+        },
       },
     },
   },

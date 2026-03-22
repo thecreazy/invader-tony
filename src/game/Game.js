@@ -16,26 +16,13 @@ import { createAudioManager }   from '../systems/AudioManager.js';
 import { createParticleSystem } from '../systems/ParticleSystem.js';
 import { createPlayer }         from './entities/Player.js';
 import { createBulletPool }     from './entities/Bullet.js';
-import { createTonyInvader, disposeInvaderResources, updateInvaderShaderTime } from './entities/TonyInvader.js';
+import { updateInvaderShaderTime } from './entities/TonyInvader.js';
 import { createBossTony }       from './entities/BossTony.js';
 import { createHUD }            from '../ui/HUD.js';
 import { createChiptunePlayer } from '../systems/ChiptunePlayer.js';
-
-import scanlinesVert  from './shaders/scanlines/scanlines.vert';
-import scanlinesFrag  from './shaders/scanlines/scanlines.frag';
-import shockwaveVert  from './shaders/shockwave/shockwave.vert';
-import shockwaveFrag  from './shaders/shockwave/shockwave.frag';
-import starfieldVert  from './shaders/starfield/starfield.vert';
-import starfieldFrag  from './shaders/starfield/starfield.frag';
-
-// Pre-allocated vectors for collision detection — never new'd in the game loop
-const _pA = new THREE.Vector3();
-const _pB = new THREE.Vector3();
-
-const EDGE_RIGHT      = 5.5;
-const EDGE_LEFT       = -5.5;
-const INVADER_FLOOR_Y = -6.5;
-const SHOCKWAVE_POOL  = 5;
+import { createPostProcessor }  from './renderer/PostProcessor.js';
+import { createWaveManager }    from './WaveManager.js';
+import { createCollisionSystem } from './CollisionSystem.js';
 
 /**
  * @param {HTMLCanvasElement} canvas
@@ -45,27 +32,16 @@ export function createGame(canvas, hudElement) {
   // ── Three.js core ──────────────────────────────────────────────────────────
   let renderer, scene, camera, clock;
 
-  // ── Post-processing ────────────────────────────────────────────────────────
-  let rtPingA, rtPingB;
-  let screenScene, screenCamera, screenQuad;
-  let swScene, swQuad; // dedicated scene for shockwave passes (never mixes with scanlinesMaterial)
-  let scanlinesMaterial;
-  const shockwavePool = [];
-  let tonyModeActive = false;
-
-  // ── Shader effects state ───────────────────────────────────────────────────
-  let starfieldMaterial = null;
-  let starfieldMesh     = null;
-  let warpTimer         = 0;
-
   // ── Systems ───────────────────────────────────────────────────────────────
   let gameState, inputManager, audioManager, particleSystem, hud;
   let chiptunePlayer = null;
   let _visibilityHandler = null;
+  let postProcessor = null;
+  let waveManager = null;
+  let collisionSystem = null;
 
   // ── Entities ──────────────────────────────────────────────────────────────
   let player, playerBullets, enemyBullets;
-  let invaders = [];
   let boss = null;
 
   // ── Grid / wave state ─────────────────────────────────────────────────────
@@ -81,19 +57,7 @@ export function createGame(canvas, hudElement) {
     currentDropAmount: 0.28,
   };
 
-  let currentWaveIndex  = 0;
-  let waveTransitioning = false;
-  let animId            = null;
-  let bossSpawned       = false;
-
-  // ── Helpers ───────────────────────────────────────────────────────────────
-  function makeRenderTarget(w, h) {
-    return new THREE.WebGLRenderTarget(w, h, {
-      minFilter: THREE.LinearFilter,
-      magFilter: THREE.LinearFilter,
-      format:    THREE.RGBAFormat,
-    });
-  }
+  let animId = null;
 
   // ── Resize ────────────────────────────────────────────────────────────────
   function onResize() {
@@ -102,13 +66,7 @@ export function createGame(canvas, hudElement) {
     renderer.setSize(w, h);
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    rtPingA.dispose();
-    rtPingB.dispose();
-    rtPingA = makeRenderTarget(w, h);
-    rtPingB = makeRenderTarget(w, h);
-    if (scanlinesMaterial) {
-      scanlinesMaterial.uniforms.uResolution.value.set(w, h);
-    }
+    postProcessor.onResize();
   }
 
   // ── Init ──────────────────────────────────────────────────────────────────
@@ -127,72 +85,6 @@ export function createGame(canvas, hudElement) {
 
     scene = new THREE.Scene();
     clock = new THREE.Clock();
-
-    // ── Starfield background ──────────────────────────────────────────────
-    starfieldMaterial = new THREE.ShaderMaterial({
-      uniforms:       { uTime: { value: 0 } },
-      vertexShader:   starfieldVert,
-      fragmentShader: starfieldFrag,
-      depthWrite:     false,
-    });
-    starfieldMesh = new THREE.Mesh(new THREE.PlaneGeometry(50, 30), starfieldMaterial);
-    starfieldMesh.position.z = -5;
-    starfieldMesh.renderOrder = -1;
-    scene.add(starfieldMesh);
-
-    // ── Post-processing setup ─────────────────────────────────────────────
-    rtPingA = makeRenderTarget(w, h);
-    rtPingB = makeRenderTarget(w, h);
-
-    screenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    screenScene  = new THREE.Scene();
-
-    const quadGeom = new THREE.PlaneGeometry(2, 2);
-
-    scanlinesMaterial = new THREE.ShaderMaterial({
-      uniforms: {
-        uTexture:             { value: null },
-        uTime:                { value: 0 },
-        uIntensity:           { value: 0.8 },
-        uTonyMode:            { value: 0 },
-        uResolution:          { value: new THREE.Vector2(w, h) },
-        uChromaticAberration: { value: 0.001 },
-        uDamageFlash:         { value: 0.0 },
-        uWarpIntensity:       { value: 0.0 },
-      },
-      vertexShader:   scanlinesVert,
-      fragmentShader: scanlinesFrag,
-      depthTest: false,
-    });
-
-    screenQuad = new THREE.Mesh(quadGeom, scanlinesMaterial);
-    screenScene.add(screenQuad);
-
-    // Dedicated scene for shockwave passes — never contains scanlinesMaterial,
-    // so setting its render target to rtPingA/B while scanlinesMaterial still
-    // references one of those textures can never form a feedback loop.
-    swScene = new THREE.Scene();
-    swQuad  = new THREE.Mesh(new THREE.PlaneGeometry(2, 2));
-    swQuad.frustumCulled = false;
-    swScene.add(swQuad);
-
-    for (let i = 0; i < SHOCKWAVE_POOL; i++) {
-      shockwavePool.push({
-        mat: new THREE.ShaderMaterial({
-          uniforms: {
-            uTexture:  { value: null },
-            uCenter:   { value: new THREE.Vector2(0.5, 0.5) },
-            uProgress: { value: 0 },
-            uStrength: { value: 0.35 },
-          },
-          vertexShader:   shockwaveVert,
-          fragmentShader: shockwaveFrag,
-          depthTest: false,
-        }),
-        active:   false,
-        progress: 0,
-      });
-    }
 
     // Systems
     gameState      = createGameState();
@@ -223,53 +115,46 @@ export function createGame(canvas, hudElement) {
     playerBullets = createBulletPool(scene, 30, 'player');
     enemyBullets  = createBulletPool(scene, 30, 'enemy');
 
-    player = createPlayer(scene, gameState, { onDamage: () => triggerDamageFlash() });
+    player = createPlayer(scene, gameState, { onDamage: () => postProcessor.setDamageFlash() });
+
+    // Post-processor (also adds starfield to scene)
+    postProcessor = createPostProcessor(renderer, scene, camera, {
+      getBoss: () => boss,
+    });
+
+    // Wave manager
+    waveManager = createWaveManager(scene, {
+      gameState,
+      grid,
+      hud,
+      audioManager,
+      postProcessor,
+      enemyBullets,
+      onBossSpawn: () => spawnBoss(),
+    });
+
+    // Collision system
+    collisionSystem = createCollisionSystem({
+      player,
+      getInvaders: () => waveManager.getInvaders(),
+      getBoss: () => boss,
+      playerBullets,
+      enemyBullets,
+      gameState,
+      audioManager,
+      particleSystem,
+    });
 
     // Start with wave 1
-    currentWaveIndex = 0;
-    spawnGrid(CONFIG.WAVES[0]);
+    waveManager.init();
     setTimeout(() => hud.showMessage('WAVE 1', 1500), 300);
 
     window.addEventListener('resize', onResize);
   }
 
-  // ── Spawn helpers ─────────────────────────────────────────────────────────
-  function spawnGrid(waveConfig) {
-    for (const inv of invaders) inv.dispose();
-    invaders = [];
-    disposeInvaderResources();
-
-    const {
-      cols, rows, enemyTypes,
-      speedMultiplier, shootIntervalMin, shootIntervalMax, dropAmount,
-    } = waveConfig;
-
-    grid.speedMultiplier   = speedMultiplier;
-    grid.shootIntervalMin  = shootIntervalMin;
-    grid.shootIntervalMax  = shootIntervalMax;
-    grid.currentDropAmount = dropAmount;
-    grid.direction         = 1;
-    grid.offsetX           = 0;
-    grid.offsetY           = 0;
-    grid.speed             = CONFIG.ENEMY.BASE_SPEED * speedMultiplier;
-    grid.shootTimer        = 2.0;
-
-    const hSpacing = cols <= 8 ? 1.25 : 1.1;
-    const vSpacing = 1.1;
-    const topY     = 4.2;
-
-    for (let row = 0; row < rows; row++) {
-      const type = enemyTypes[row] || 'basic';
-      for (let col = 0; col < cols; col++) {
-        invaders.push(createTonyInvader(scene, { col, row, type, hSpacing, vSpacing, topY, cols }));
-      }
-    }
-
-    bossSpawned = false;
-  }
-
+  // ── Spawn boss ────────────────────────────────────────────────────────────
   function spawnBoss() {
-    bossSpawned = true;
+    waveManager.markBossSpawned();
     gameState.transition(STATES.BOSS_FIGHT);
     chiptunePlayer?.setVolume(0.25);
 
@@ -279,7 +164,7 @@ export function createGame(canvas, hudElement) {
       audioManager,
       hud,
       getPlayerPos:  () => player.getPosition(),
-      onShockwave:   (wx, wy) => triggerShockwave(wx, wy),
+      onShockwave:   (wx, wy) => postProcessor.triggerShockwave(wx, wy),
       onTonyMode: () => activateTonyMode(),
       onDeath:       () => triggerVictory(),
     });
@@ -287,102 +172,17 @@ export function createGame(canvas, hudElement) {
     hud.showBossBar(boss.hp, CONFIG.BOSS.HP);
   }
 
-  // ── Shockwave ─────────────────────────────────────────────────────────────
-  function triggerShockwave(worldX, worldY) {
-    const slot = shockwavePool.find(s => !s.active);
-    if (!slot) return;
-    _pA.set(worldX, worldY, 0);
-    _pA.project(camera);
-    slot.active   = true;
-    slot.progress = 0;
-    slot.mat.uniforms.uCenter.value.set((_pA.x + 1) * 0.5, (_pA.y + 1) * 0.5);
-    slot.mat.uniforms.uProgress.value = 0;
-    slot.mat.uniforms.uStrength.value = 0.35;
-  }
-
-  // ── Damage flash ──────────────────────────────────────────────────────────
-  function triggerDamageFlash() {
-    if (scanlinesMaterial) scanlinesMaterial.uniforms.uDamageFlash.value = 1.0;
-  }
-
-  // ── Always-on effect updates (run every frame regardless of game state) ────
-  function updateEffects(delta) {
-    if (!scanlinesMaterial) return;
-    const u = scanlinesMaterial.uniforms;
-
-    // Fade damage flash
-    if (u.uDamageFlash.value > 0)
-      u.uDamageFlash.value = Math.max(0, u.uDamageFlash.value - delta * 3.3);
-
-    // Fade warp
-    if (warpTimer > 0) {
-      warpTimer = Math.max(0, warpTimer - delta * 1.25);
-      u.uWarpIntensity.value = warpTimer;
-    }
-
-    // Boss chromatic aberration — ramps up as HP decreases
-    const state = gameState.current;
-    if (state === STATES.BOSS_FIGHT && boss && boss.alive) {
-      u.uChromaticAberration.value = (1.0 - boss.hp / CONFIG.BOSS.HP) * 0.008 + 0.001;
-    } else {
-      u.uChromaticAberration.value = 0.001;
-    }
-  }
-
   // ── Tony Mode ─────────────────────────────────────────────────────────────
   function activateTonyMode() {
-    tonyModeActive = true;
-    if (scanlinesMaterial) scanlinesMaterial.uniforms.uTonyMode.value = 1;
+    postProcessor.setTonyMode(true);
     hud.showTonyMode();
     audioManager.startTonyLoop();
   }
 
   function deactivateTonyMode() {
-    tonyModeActive = false;
-    if (scanlinesMaterial) scanlinesMaterial.uniforms.uTonyMode.value = 0;
+    postProcessor.setTonyMode(false);
     hud.hideTonyMode();
     audioManager.stopTonyLoop();
-  }
-
-  // ── Render ────────────────────────────────────────────────────────────────
-  function renderFrame(delta) {
-    if (starfieldMaterial) starfieldMaterial.uniforms.uTime.value += delta;
-
-    // Pass 1: render game scene to rtPingA
-    renderer.setRenderTarget(rtPingA);
-    renderer.clear();
-    renderer.render(scene, camera);
-
-    // Pass 2: shockwave ping-pong passes.
-    // Uses swScene (contains only swQuad) — never mixed with scanlinesMaterial,
-    // which prevents the WebGL feedback loop that occurred when screenScene
-    // (containing screenQuad with scanlinesMaterial pointing to rtPingA/B texture)
-    // was used as both the render source and framebuffer target during ping-pong swaps.
-    let src = rtPingA;
-    let dst = rtPingB;
-
-    for (const slot of shockwavePool) {
-      if (!slot.active) continue;
-      slot.progress += delta * 0.9;
-      if (slot.progress >= 1) { slot.active = false; continue; }
-
-      slot.mat.uniforms.uTexture.value  = src.texture;
-      slot.mat.uniforms.uProgress.value = slot.progress;
-      swQuad.material = slot.mat;
-
-      renderer.setRenderTarget(dst);
-      renderer.clear();
-      renderer.render(swScene, screenCamera);
-
-      const tmp = src; src = dst; dst = tmp;
-    }
-
-    // Pass 3: scanlines → screen
-    scanlinesMaterial.uniforms.uTexture.value = src.texture;
-    scanlinesMaterial.uniforms.uTime.value   += delta;
-    renderer.setRenderTarget(null);
-    renderer.clear();
-    renderer.render(screenScene, screenCamera);
   }
 
   // ── Game loop ─────────────────────────────────────────────────────────────
@@ -391,8 +191,8 @@ export function createGame(canvas, hudElement) {
     let delta = clock.getDelta();
     if (delta > 0.05) delta = 0.05;
     update(delta);
-    updateEffects(delta);
-    renderFrame(delta);
+    postProcessor.updateEffects(delta);
+    postProcessor.renderFrame(delta);
   }
 
   function update(delta) {
@@ -405,123 +205,15 @@ export function createGame(canvas, hudElement) {
     particleSystem.update(delta);
     updateInvaderShaderTime(delta); // no-op with sprite approach
 
-    if (state === STATES.PLAYING) updateGrid(delta);
+    if (state === STATES.PLAYING) waveManager.updateGrid(delta);
 
     if (state === STATES.BOSS_FIGHT && boss && boss.alive) {
       boss.update(delta);
       hud.updateBossBar(boss.hp, CONFIG.BOSS.HP);
     }
 
-    checkCollisions();
+    collisionSystem.check();
     checkWinLose();
-  }
-
-  // ── Grid movement ─────────────────────────────────────────────────────────
-  function updateGrid(delta) {
-    let aliveCount = 0;
-    let maxBaseX   = -Infinity;
-    let minBaseX   =  Infinity;
-
-    for (const inv of invaders) {
-      if (!inv.alive) continue;
-      aliveCount++;
-      if (inv.baseX > maxBaseX) maxBaseX = inv.baseX;
-      if (inv.baseX < minBaseX) minBaseX = inv.baseX;
-    }
-
-    if (aliveCount === 0) return;
-
-    // Speed ramps only after 70% of wave is cleared
-    const aliveRatio = aliveCount / invaders.length;
-    const dynamicSpeed = aliveRatio > 0.3
-      ? CONFIG.ENEMY.BASE_SPEED * grid.speedMultiplier
-      : CONFIG.ENEMY.BASE_SPEED * grid.speedMultiplier * (1.0 + ((0.3 - aliveRatio) / 0.3) * 2.5);
-    grid.speed = dynamicSpeed;
-
-    grid.offsetX += grid.direction * grid.speed * delta;
-
-    const rightEdge = maxBaseX + grid.offsetX;
-    const leftEdge  = minBaseX + grid.offsetX;
-
-    if (rightEdge > EDGE_RIGHT || leftEdge < EDGE_LEFT) {
-      grid.direction *= -1;
-      grid.offsetY   -= grid.currentDropAmount;
-      grid.offsetX   += grid.direction * 0.05;
-    }
-
-    for (const inv of invaders) {
-      inv.update(delta, grid.offsetX, grid.offsetY);
-    }
-
-    // Random shooting with wave-specific intervals
-    grid.shootTimer -= delta;
-    if (grid.shootTimer <= 0) {
-      let attempts = 0;
-      while (attempts < 10) {
-        const idx = Math.floor(Math.random() * invaders.length);
-        if (invaders[idx].alive) {
-          invaders[idx].shoot(enemyBullets);
-          break;
-        }
-        attempts++;
-      }
-      const min = grid.shootIntervalMin / 1000;
-      const max = grid.shootIntervalMax / 1000;
-      grid.shootTimer = min + Math.random() * (max - min);
-    }
-  }
-
-  // ── Collision detection ───────────────────────────────────────────────────
-  function checkCollisions() {
-    const state = gameState.current;
-    const pbArr = playerBullets.getActive();
-    const ebArr = enemyBullets.getActive();
-
-    // Player bullets vs invaders
-    if (state === STATES.PLAYING) {
-      for (const pb of pbArr) {
-        if (!pb.active) continue;
-        _pA.copy(pb.mesh.position);
-        for (const inv of invaders) {
-          if (!inv.alive) continue;
-          _pB.copy(inv.mesh.position);
-          if (_pA.distanceTo(_pB) < 0.5) {
-            const pts = inv.takeDamage();
-            pb.deactivate();
-            gameState.addScore(pts);
-            audioManager.playExplosion();
-            particleSystem.emit(_pB.x, _pB.y, 0, 12, 0xffaa00, 3.5);
-            break;
-          }
-        }
-      }
-    }
-
-    // Player bullets vs boss
-    if (state === STATES.BOSS_FIGHT && boss && boss.alive) {
-      _pB.copy(boss.mesh.position);
-      for (const pb of pbArr) {
-        if (!pb.active) continue;
-        _pA.copy(pb.mesh.position);
-        if (_pA.distanceTo(_pB) < 2.0) {
-          boss.takeDamage();
-          pb.deactivate();
-          gameState.addScore(50);
-        }
-      }
-    }
-
-    // Enemy bullets vs player
-    _pB.copy(player.getPosition());
-    for (const eb of ebArr) {
-      if (!eb.active) continue;
-      _pA.copy(eb.mesh.position);
-      if (_pA.distanceTo(_pB) < 0.5) {
-        eb.deactivate();
-        player.takeDamage(audioManager);
-        particleSystem.emit(_pB.x, _pB.y, 0, 8, 0x00ffff, 2.5);
-      }
-    }
   }
 
   // ── Win / lose ────────────────────────────────────────────────────────────
@@ -532,40 +224,7 @@ export function createGame(canvas, hudElement) {
     if (gameState.lives <= 0) { triggerGameOver(); return; }
 
     if (state === STATES.PLAYING) {
-      // Invaders reached the floor
-      for (const inv of invaders) {
-        if (inv.alive && inv.mesh.position.y < INVADER_FLOOR_Y) {
-          triggerGameOver();
-          return;
-        }
-      }
-
-      // Count alive invaders
-      let alive = 0;
-      for (const inv of invaders) { if (inv.alive) alive++; }
-
-      if (alive === 0 && !waveTransitioning && !bossSpawned) {
-        waveTransitioning = true;
-
-        if (currentWaveIndex < CONFIG.WAVES.length - 1) {
-          // Advance to next wave
-          currentWaveIndex++;
-          const nextWave = CONFIG.WAVES[currentWaveIndex];
-          hud.showMessage(nextWave.label, 2000);
-          audioManager.playWaveClear();
-          warpTimer = 1.0;
-          if (scanlinesMaterial) scanlinesMaterial.uniforms.uWarpIntensity.value = 1.0;
-          setTimeout(() => {
-            spawnGrid(nextWave);
-            waveTransitioning = false;
-            gameState.transition(STATES.PLAYING);
-          }, 2200);
-        } else {
-          // All 4 waves cleared → boss
-          spawnBoss();
-          waveTransitioning = false;
-        }
-      }
+      waveManager.checkWaveClear(CONFIG.GAMEPLAY.INVADER_FLOOR_Y, triggerGameOver);
     }
     // Boss death → triggerVictory() via onDeath callback
   }
@@ -573,7 +232,7 @@ export function createGame(canvas, hudElement) {
   function triggerGameOver() {
     if (gameState.current === STATES.GAME_OVER) return;
     gameState.transition(STATES.GAME_OVER);
-    if (tonyModeActive) deactivateTonyMode();
+    if (boss && boss.alive === false) { /* tony mode already off */ } else { deactivateTonyMode(); }
     chiptunePlayer?.stop();
     audioManager.playGameOver();
     hud.showMessage('GAME OVER', 1800);
@@ -585,7 +244,7 @@ export function createGame(canvas, hudElement) {
   function triggerVictory() {
     if (gameState.current === STATES.VICTORY) return;
     gameState.transition(STATES.VICTORY);
-    if (tonyModeActive) deactivateTonyMode();
+    deactivateTonyMode();
     chiptunePlayer?.stop();
     audioManager.playVictory();
     hud.showMessage('YOU WIN!', 1800);
@@ -631,24 +290,14 @@ export function createGame(canvas, hudElement) {
       playerBullets?.dispose();
       enemyBullets?.dispose();
 
-      for (const inv of invaders) inv.dispose();
-      disposeInvaderResources();
-      invaders = [];
+      waveManager?.dispose();
 
       boss?.dispose();
       boss = null;
 
       hud?.dispose();
 
-      rtPingA?.dispose();
-      rtPingB?.dispose();
-      scanlinesMaterial?.dispose();
-      for (const slot of shockwavePool) slot.mat.dispose();
-      screenQuad?.geometry.dispose();
-      swQuad?.geometry.dispose();
-
-      starfieldMesh?.geometry.dispose();
-      starfieldMaterial?.dispose();
+      postProcessor?.dispose();
 
       renderer?.dispose();
     },

@@ -3,27 +3,47 @@
  * Never hardcode values in game logic; reference CONFIG instead.
  */
 export const CONFIG = {
+
+  // ── GRID ─────────────────────────────────────────────────────────────────
   GRID: { COLS: 10, ROWS: 5 },
+
+  // ── PLAYER ───────────────────────────────────────────────────────────────
   PLAYER: { SPEED: 8, BULLET_COOLDOWN: 180, LIVES: 3 },
+
+  // ── ENEMY ────────────────────────────────────────────────────────────────
   ENEMY: {
-    BASE_SPEED: 0.6,
+    BASE_SPEED:        0.6,
     SHOOT_INTERVAL_MIN: 1200,
     SHOOT_INTERVAL_MAX: 3500,
   },
+
+  // ── BOSS ─────────────────────────────────────────────────────────────────
   BOSS: { HP: 25, PHASES: [0.66, 0.33] },
+
+  // ── CANVAS ───────────────────────────────────────────────────────────────
   CANVAS: { FOV: 70, NEAR: 0.1, FAR: 100 },
+
+  // ── COLORS ───────────────────────────────────────────────────────────────
   COLORS: {
-    PLAYER: '#00ffff',
-    ENEMY: '#ffaa00',
-    BOSS: '#ff0044',
-    BULLET_PLAYER: '#00ffff',
-    BULLET_ENEMY: '#ff6600',
-    BACKGROUND: '#000000',
-    NEON_GREEN: '#39ff14',
-    NEON_MAGENTA: '#ff00ff',
+    PLAYER:         '#00ffff',
+    ENEMY:          '#ffaa00',
+    BOSS:           '#ff0044',
+    BULLET_PLAYER:  '#00ffff',
+    BULLET_ENEMY:   '#ff6600',
+    BACKGROUND:     '#000000',
+    NEON_GREEN:     '#39ff14',
+    NEON_MAGENTA:   '#ff00ff',
   },
 
-  // Wave definitions — 4 waves before the boss
+  // ── GAMEPLAY CONSTANTS ────────────────────────────────────────────────────
+  GAMEPLAY: {
+    EDGE_RIGHT:          5.5,
+    EDGE_LEFT:          -5.5,
+    INVADER_FLOOR_Y:    -6.5,
+    SHOCKWAVE_POOL_SIZE:  5,
+  },
+
+  // ── WAVES ─────────────────────────────────────────────────────────────────
   WAVES: [
     {
       id: 1,

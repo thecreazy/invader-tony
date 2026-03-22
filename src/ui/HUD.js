@@ -4,135 +4,8 @@
  */
 
 import { getScores } from '../services/leaderboard.js';
-
-const STYLE_ID = 'hud-styles';
-
-function injectStyles() {
-  if (document.getElementById(STYLE_ID)) return;
-  const s = document.createElement('style');
-  s.id = STYLE_ID;
-  s.textContent = `
-    @keyframes hud-msg-fade {
-      0%   { opacity: 1; transform: translate(-50%,-50%) scale(1.1); }
-      70%  { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-      100% { opacity: 0; transform: translate(-50%,-50%) scale(0.9); }
-    }
-    @keyframes hud-quote-fade {
-      0%   { opacity: 0; transform: translate(-50%,-50%) scale(0.9); }
-      10%  { opacity: 1; transform: translate(-50%,-50%) scale(1); }
-      80%  { opacity: 1; }
-      100% { opacity: 0; }
-    }
-    @keyframes tony-rainbow {
-      0%   { filter: hue-rotate(0deg)   drop-shadow(0 0 8px #ff0044); }
-      25%  { filter: hue-rotate(90deg)  drop-shadow(0 0 8px #ffff00); }
-      50%  { filter: hue-rotate(180deg) drop-shadow(0 0 8px #00ffff); }
-      75%  { filter: hue-rotate(270deg) drop-shadow(0 0 8px #ff00ff); }
-      100% { filter: hue-rotate(360deg) drop-shadow(0 0 8px #ff0044); }
-    }
-    @keyframes tony-pulse {
-      0%, 100% { transform: translate(-50%, -50%) scale(1);   }
-      50%       { transform: translate(-50%, -50%) scale(1.08); }
-    }
-    .hud-root {
-      position: absolute; inset: 0;
-      pointer-events: none;
-      font-family: 'Press Start 2P', monospace;
-      z-index: 20;
-    }
-    .hud-score {
-      position: absolute; top: 12px; left: 16px;
-      color: #39ff14; font-size: 12px;
-      text-shadow: 0 0 6px #39ff14;
-    }
-    .hud-hiscore {
-      position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
-      color: #ffff00; font-size: 10px;
-      text-shadow: 0 0 6px #ffff00;
-      white-space: nowrap;
-    }
-    .hud-lives {
-      position: absolute; top: 12px; right: 16px;
-      color: #00ffff; font-size: 14px;
-      text-shadow: 0 0 6px #00ffff;
-      letter-spacing: 0.15em;
-    }
-    .hud-wave {
-      position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
-      color: #ffffff; font-size: 10px;
-      letter-spacing: 0.12em;
-      text-shadow: 0 0 4px #ffffff;
-      white-space: nowrap;
-    }
-    .hud-boss-bar-wrap {
-      position: absolute; top: 36px; left: 50%; transform: translateX(-50%);
-      display: none; flex-direction: column; align-items: center; gap: 4px;
-    }
-    .hud-boss-label {
-      color: #ff0044; font-size: 8px; letter-spacing: 0.12em;
-      text-shadow: 0 0 6px #ff0044;
-    }
-    .hud-boss-bar-bg {
-      width: 220px; height: 10px;
-      background: #220010; border: 1px solid #ff0044;
-    }
-    .hud-boss-bar-fill {
-      height: 100%; width: 100%;
-      background: linear-gradient(90deg, #ff0044, #ff6600);
-      transition: width 0.12s linear;
-    }
-    .hud-message {
-      position: absolute; top: 45%; left: 50%;
-      transform: translate(-50%, -50%);
-      color: #ffff00; font-size: clamp(12px, 3vw, 20px);
-      text-shadow: 0 0 10px #ffff00, 0 0 20px #ffff00;
-      letter-spacing: 0.15em;
-      white-space: pre;
-      text-align: center;
-      pointer-events: none;
-      z-index: 30;
-    }
-    .hud-quote {
-      position: absolute; top: 58%; left: 50%;
-      transform: translate(-50%, -50%);
-      color: #ff6600; font-size: clamp(7px, 1.2vw, 10px);
-      text-shadow: 0 0 6px #ff6600;
-      letter-spacing: 0.08em;
-      white-space: pre;
-      text-align: center;
-      pointer-events: none;
-      z-index: 28;
-    }
-    .hud-tony-mode {
-      position: absolute; top: 30%; left: 50%;
-      transform: translate(-50%, -50%);
-      color: #ff00ff;
-      font-size: clamp(14px, 3.5vw, 24px);
-      letter-spacing: 0.12em;
-      white-space: nowrap;
-      pointer-events: none;
-      z-index: 35;
-      animation: tony-rainbow 0.6s linear infinite,
-                 tony-pulse   1.0s ease-in-out infinite;
-    }
-    .hud-mute {
-      position: absolute; top: 38px; right: 16px;
-      font-family: 'Press Start 2P', monospace;
-      font-size: 8px;
-      color: #333333;
-      background: none;
-      border: 1px solid #333333;
-      padding: 4px 8px;
-      cursor: pointer;
-      pointer-events: auto;
-      letter-spacing: 0.08em;
-      line-height: 1;
-      transition: color 0.1s, border-color 0.1s;
-    }
-    .hud-mute:hover { color: #ffffff; border-color: #ffffff; }
-  `;
-  document.head.appendChild(s);
-}
+import styles from './HUD.css?inline';
+import { injectStyle, removeStyle } from '../utils/dom.js';
 
 const MUTE_KEY = 'invadertony_muted';
 
@@ -142,7 +15,7 @@ const MUTE_KEY = 'invadertony_muted';
  * @param {{ onMuteToggle?: (muted: boolean) => void }} [opts]
  */
 export function createHUD(container, gameState, opts = {}) {
-  injectStyles();
+  const _styleEl = injectStyle(styles);
 
   const hudRoot = document.createElement('div');
   hudRoot.className = 'hud-root';
@@ -290,7 +163,7 @@ export function createHUD(container, gameState, opts = {}) {
       if (_msgTimeout)   clearTimeout(_msgTimeout);
       if (_quoteTimeout) clearTimeout(_quoteTimeout);
       container.removeChild(hudRoot);
-      document.getElementById(STYLE_ID)?.remove();
+      removeStyle(_styleEl);
     },
   };
 }

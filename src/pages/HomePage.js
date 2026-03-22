@@ -5,6 +5,8 @@
 
 import { navigate } from '../router.js';
 import { getScores } from '../services/leaderboard.js';
+import styles from './HomePage.css?inline';
+import { injectStyle, removeStyle } from '../utils/dom.js';
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -19,6 +21,9 @@ let selectedIndex = 0;
 
 /** @type {AudioContext | null} */
 let audioCtx = null;
+
+/** @type {HTMLStyleElement | null} */
+let _styleEl = null;
 
 /** @type {ReturnType<typeof setTimeout> | null} */
 let attractTimer = null;
@@ -44,249 +49,6 @@ const MENU_ITEMS = [
 ];
 
 const GLITCH_FILTER_BASE = 'drop-shadow(0 0 8px #ff6600)';
-const STYLE_ID = 'home-page-styles';
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-
-function injectStyles() {
-  if (document.getElementById(STYLE_ID)) return;
-  const s = document.createElement('style');
-  s.id = STYLE_ID;
-  s.textContent = `
-    :root {
-      --color-bg:      #000000;
-      --color-green:   #39ff14;
-      --color-cyan:    #00ffff;
-      --color-yellow:  #ffff00;
-      --color-magenta: #ff00ff;
-      --color-orange:  #ff6600;
-      --color-red:     #ff0044;
-      --color-white:   #ffffff;
-      --color-dim:     #333333;
-    }
-
-    @keyframes crt-power-on {
-      0%   { clip-path: inset(49% 0 49% 0); filter: brightness(3); }
-      35%  { clip-path: inset(2% 0 2% 0);  filter: brightness(1.5); }
-      100% { clip-path: inset(0% 0 0% 0);  filter: brightness(1); }
-    }
-
-    @keyframes home-fade-in {
-      from { opacity: 0; }
-      to   { opacity: 1; }
-    }
-
-    @keyframes insert-coin-blink {
-      0%, 49% { opacity: 1; }
-      50%, 100% { opacity: 0; }
-    }
-
-    @keyframes glow-pulse-cyan {
-      from { text-shadow: 0 0 4px var(--color-cyan), 0 0 8px var(--color-cyan); }
-      to   { text-shadow: 0 0 10px var(--color-cyan), 0 0 24px var(--color-cyan),
-                          0 0 48px var(--color-cyan), 0 0 2px #fff; }
-    }
-
-    @keyframes glow-pulse-magenta {
-      from { text-shadow: 0 0 4px var(--color-magenta), 0 0 8px var(--color-magenta); }
-      to   { text-shadow: 0 0 10px var(--color-magenta), 0 0 24px var(--color-magenta),
-                          0 0 48px var(--color-magenta), 0 0 2px #fff; }
-    }
-
-    @keyframes ascii-pulse {
-      from { transform: scale(1.0); }
-      to   { transform: scale(1.02); }
-    }
-
-    @keyframes glitch-flicker {
-      0%   { opacity: 1; }
-      15%  { opacity: 0; }
-      30%  { opacity: 1; }
-      45%  { opacity: 0; }
-      60%  { opacity: 1; }
-      75%  { opacity: 0; }
-      90%  { opacity: 1; }
-      100% { opacity: 0; }
-    }
-
-    @keyframes rotate-hint {
-      0%   { transform: rotate(0deg); }
-      50%  { transform: rotate(90deg); }
-      100% { transform: rotate(0deg); }
-    }
-
-    .home-root {
-      position: fixed;
-      inset: 0;
-      font-family: 'Press Start 2P', monospace;
-      animation: crt-power-on 320ms ease-out forwards,
-                 home-fade-in 600ms ease-out forwards;
-      overflow: hidden;
-    }
-
-    .home-scanlines {
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent 0px,
-        transparent 2px,
-        rgba(0,0,0,0.18) 2px,
-        rgba(0,0,0,0.18) 4px
-      );
-      pointer-events: none;
-      z-index: 100;
-    }
-
-    .home-vignette {
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(
-        ellipse at center,
-        transparent 55%,
-        rgba(0,0,0,0.55) 83%,
-        rgba(0,0,0,0.85) 100%
-      );
-      pointer-events: none;
-      z-index: 99;
-    }
-
-    .home-content {
-      position: relative;
-      z-index: 10;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      padding: 20px;
-      box-sizing: border-box;
-      gap: 0;
-    }
-
-    .home-insert-coin {
-      color: var(--color-yellow);
-      font-size: 10px;
-      letter-spacing: 0.15em;
-      animation: insert-coin-blink 0.8s steps(1) infinite;
-      margin-bottom: 16px;
-    }
-
-    .home-title-line1 {
-      color: var(--color-cyan);
-      font-size: clamp(28px, 6vw, 52px);
-      line-height: 1.1;
-      animation: glow-pulse-cyan 3s ease-in-out infinite alternate;
-      text-align: center;
-    }
-
-    .home-title-invaders {
-      color: var(--color-magenta);
-      font-size: clamp(28px, 6vw, 52px);
-      line-height: 1.1;
-      animation: glow-pulse-magenta 3s ease-in-out infinite alternate;
-      text-align: center;
-    }
-
-    .home-title-sep {
-      color: var(--color-dim);
-      font-size: clamp(8px, 1.2vw, 11px);
-      letter-spacing: 0.02em;
-      margin: 10px 0;
-      user-select: none;
-    }
-
-    .home-ascii {
-      width: clamp(64px, 10vw, 96px);
-      height: auto;
-      display: block;
-      margin: 8px auto;
-      image-rendering: pixelated;
-      filter: drop-shadow(0 0 8px #ff6600);
-      animation: ascii-pulse 2s ease-in-out infinite alternate;
-      user-select: none;
-    }
-
-    .home-menu {
-      margin-top: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      align-items: flex-start;
-    }
-
-    .home-menu-item {
-      font-size: clamp(10px, 2vw, 14px);
-      letter-spacing: 0.1em;
-      cursor: pointer;
-      user-select: none;
-      padding: 4px 0;
-    }
-
-    .home-menu-item[data-selected="true"] {
-      color: var(--color-green);
-      text-shadow: 0 0 6px var(--color-green);
-    }
-
-    .home-menu-item[data-selected="false"] {
-      color: var(--color-white);
-    }
-
-    .home-menu-item.glitch-select {
-      animation: glitch-flicker 200ms steps(1) forwards;
-    }
-
-    .home-bottom {
-      position: fixed;
-      bottom: 12px;
-      left: 0;
-      right: 0;
-      display: flex;
-      justify-content: space-between;
-      padding: 0 16px;
-      font-size: 8px;
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    .home-bottom-left,
-    .home-bottom-right { color: var(--color-dim); }
-    .home-bottom-center { color: var(--color-yellow); }
-
-    .home-portrait-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.92);
-      z-index: 200;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 24px;
-      font-family: 'Press Start 2P', monospace;
-    }
-
-    .home-portrait-overlay .rotate-icon {
-      font-size: 48px;
-      animation: rotate-hint 2s ease-in-out infinite;
-      display: inline-block;
-    }
-
-    .home-portrait-overlay .rotate-text {
-      color: var(--color-yellow);
-      font-size: 10px;
-      letter-spacing: 0.12em;
-      text-align: center;
-      line-height: 1.8;
-      white-space: pre;
-    }
-  `;
-  document.head.appendChild(s);
-}
-
-function removeStyles() {
-  document.getElementById(STYLE_ID)?.remove();
-}
 
 // ─── Audio ────────────────────────────────────────────────────────────────────
 
@@ -521,7 +283,7 @@ export function mount(container) {
   _container = container;
   selectedIndex = 0;
 
-  injectStyles();
+  _styleEl = injectStyle(styles);
   root = buildDOM();
   _container.appendChild(root);
 
@@ -551,7 +313,8 @@ export function unmount() {
   portraitOverlay = null;
   menuEls = [];
 
-  removeStyles();
+  removeStyle(_styleEl);
+  _styleEl = null;
 }
 
 export const HomePage = { mount, unmount };

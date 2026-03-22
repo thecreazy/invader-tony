@@ -9,6 +9,29 @@
  */
 
 import crypto from 'crypto';
+import profanityPkg from '@2toad/profanity';
+
+const { Profanity, ProfanityOptions } = profanityPkg;
+
+// ─── Profanity filter ─────────────────────────────────────────────────────────
+
+const _opts = new ProfanityOptions();
+_opts.wholeWord = false; // catch partials: "fuckyou", "stronzetto", leet speak compounds
+
+const filter = new Profanity(_opts);
+
+// Italian words not covered by the built-in English/German/French lists
+filter.addWords([
+  'cazzo', 'minchia', 'merda', 'stronzo', 'stronza',
+  'vaffanculo', 'puttana', 'troia', 'coglione', 'cogliona',
+  'figa', 'fica', 'culetto', 'cornuto', 'bastardo', 'bastarda',
+  'negro', 'negra', 'ritardato', 'mongoloide',
+]);
+
+// Whitelist common false positives triggered by wholeWord: false
+filter.whitelist.addWords([
+  'assassin', 'classic', 'bass', 'mass', 'glass', 'grass', 'brass', 'class', 'pass', 'sass',
+]);
 
 // ─── Session token verification ───────────────────────────────────────────────
 
@@ -88,12 +111,6 @@ const DUPLICATE_WINDOW_SEC = 30;
 
 const BLOCKED_NAMES = new Set(['ADMIN', 'ROOT', 'NULL', 'HACK', 'CHEAT', 'BOT', 'TEST']);
 
-const PROFANITY = [
-  'fuck', 'shit', 'cunt', 'nigger', 'nigga', 'faggot', 'retard',
-  'bitch', 'whore', 'slut', 'asshole', 'bastard', 'cock', 'dick',
-  'pussy', 'piss', 'crap',
-];
-
 // ─── IP rate-limit (module-level, resets on cold start) ──────────────────────
 
 /** @type {Map<string, { count: number, resetAt: number }>} */
@@ -126,9 +143,21 @@ function isValidName(name) {
   return true;
 }
 
+// Normalize common leet speak substitutions before the profanity check.
+// Names are already uppercase (A-Z, 0-9, space) at this point.
+function normalizeLeet(str) {
+  return str
+    .replace(/0/g, 'O')
+    .replace(/1/g, 'I')
+    .replace(/3/g, 'E')
+    .replace(/4/g, 'A')
+    .replace(/5/g, 'S')
+    .replace(/7/g, 'T')
+    .replace(/8/g, 'B');
+}
+
 function containsProfanity(name) {
-  const lower = name.toLowerCase().replace(/\s+/g, '');
-  return PROFANITY.some(word => lower.includes(word));
+  return filter.exists(name) || filter.exists(normalizeLeet(name));
 }
 
 // ─── Supabase helpers ─────────────────────────────────────────────────────────

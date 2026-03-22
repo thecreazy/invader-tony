@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  '@2toad/profanity':
+    specifier: ^3.2.0
+    version: 3.2.0
   three:
     specifier: ^0.172.0
     version: 0.172.0
@@ -21,6 +24,11 @@ devDependencies:
     version: 1.5.6(vite@6.4.1)
 
 packages:
+
+  /@2toad/profanity@3.2.0:
+    resolution: {integrity: sha512-1wF0F9SXBS8zsn74ZyDKhClSH+5Tupycq2F1x34+/1YKhrq49ejs+imH8/YIS/JwXoj2oUY+KTpoyOxJeNA2mQ==}
+    engines: {node: '>=12'}
+    dev: false
 
   /@bytecodealliance/preview2-shim@0.17.6:
     resolution: {integrity: sha512-n3cM88gTen5980UOBAD6xDcNNL3ocTK8keab21bpx1ONdA+ARj7uD1qoFxOWCyKlkpSi195FH+GeAut7Oc6zZw==}

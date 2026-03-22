@@ -4,7 +4,7 @@
  */
 
 import { navigate } from '../router.js';
-import { getScores } from '../services/leaderboard.js';
+import { getLocalScores } from '../services/leaderboard.js';
 import styles from './HomePage.css?inline';
 import { injectStyle, removeStyle } from '../utils/dom.js';
 
@@ -230,7 +230,7 @@ function buildDOM() {
 
   const bcenter = document.createElement('span');
   bcenter.className = 'home-bottom-center';
-  const scores = getScores();
+  const scores = getLocalScores();
   const hi = scores.length > 0 ? scores[0].score : 0;
   bcenter.textContent = `HI-SCORE: ${String(hi).padStart(6, '0')}`;
 

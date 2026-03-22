@@ -1,52 +1,147 @@
 /**
- * Leaderboard data service.
- * Abstracted over localStorage so it can be swapped for a real API
- * by changing only this file.
+ * Leaderboard data service — API-first with localStorage fallback.
+ * All reads/writes go to /api/scores; localStorage is used when the API
+ * is unavailable (offline, local dev without vercel dev, etc.).
  */
 
-const STORAGE_KEY = 'tony_invaders_scores';
-const MAX_ENTRIES = 10;
+const API_BASE = '/api/scores';
+const LOCAL_KEY = 'invadertony_scores_local';
 
 /**
- * @typedef {{ name: string, score: number, date: string }} ScoreEntry
+ * @typedef {{ name: string, score: number, created_at: string }} ScoreEntry
  */
 
 /**
- * Reads all scores from storage and returns them sorted by score descending.
- * // TODO API: replace this with fetch() call when backend is ready
+ * Error thrown when the API rejects the submission with a user-visible reason.
+ * Callers should catch this and show the appropriate message to the player.
+ */
+export class LeaderboardError extends Error {
+  /** @param {string} code */
+  constructor(code) {
+    super(code);
+    this.code = code;
+  }
+}
+
+/** Error codes that must be shown to the user (not silently swallowed). */
+const USER_VISIBLE_ERRORS = new Set([
+  'NICKNAME_PROFANITY',
+  'INVALID_NAME',
+  'RATE_LIMIT',
+  'MISSING_TOKEN',
+  'INVALID_TOKEN',
+  'TOKEN_EXPIRED',
+  'SESSION_ALREADY_USED',
+]);
+
+/**
+ * Fetch top 10 scores from the API.
+ * Falls back to localStorage if the API is unavailable.
+ * @returns {Promise<ScoreEntry[]>}
+ */
+export async function getScores() {
+  try {
+    const res = await fetch(API_BASE, { signal: AbortSignal.timeout(3000) });
+    if (!res.ok) throw new Error('API error');
+    const data = await res.json();
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(data));
+    return data;
+  } catch (err) {
+    console.warn('Leaderboard API unavailable, using local cache:', err.message);
+    return getLocalScores();
+  }
+}
+
+/**
+ * Submit a new score to the API.
+ * Always saves to localStorage immediately, regardless of API result.
+ * Throws a LeaderboardError for user-visible validation failures (profanity, rate limit, etc.).
+ * @param {string} name
+ * @param {number} score
+ * @param {{ sessionToken?: string, scoreHash?: string }} [meta]
+ * @returns {Promise<ScoreEntry[]>} updated leaderboard
+ */
+export async function saveScore(name, score, meta = {}) {
+  // Always save locally first — synchronous, never lost
+  saveLocalScore(name, score);
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/submit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name,
+        score,
+        sessionToken: meta.sessionToken ?? '',
+        scoreHash:    meta.scoreHash    ?? '',
+      }),
+      signal: AbortSignal.timeout(5000),
+    });
+  } catch (err) {
+    console.warn('Score submit network error, saved locally:', err.message);
+    return getLocalScores();
+  }
+
+  if (!res.ok) {
+    let code = 'UNKNOWN';
+    try {
+      const data = await res.json();
+      code = data.error || code;
+    } catch {}
+
+    if (USER_VISIBLE_ERRORS.has(code)) {
+      throw new LeaderboardError(code);
+    }
+
+    // Non-user-visible API errors: fall back to local silently
+    console.warn(`Score submit API error ${res.status} (${code}), saved locally`);
+    return getLocalScores();
+  }
+
+  const data = await res.json();
+  // Update local cache with the server's authoritative leaderboard
+  if (Array.isArray(data.leaderboard)) {
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(data.leaderboard));
+    return data.leaderboard;
+  }
+  return getLocalScores();
+}
+
+/**
+ * Get scores from localStorage cache (synchronous).
  * @returns {ScoreEntry[]}
  */
-export function getScores() {
+export function getLocalScores() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const scores = raw ? JSON.parse(raw) : [];
-    return scores.sort((a, b) => b.score - a.score).slice(0, MAX_ENTRIES);
+    const raw = localStorage.getItem(LOCAL_KEY);
+    return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
 /**
- * Saves a new score entry, keeps only the top 10, and returns the updated array.
- * // TODO API: replace this with fetch() call when backend is ready
+ * Save a score to localStorage (synchronous).
  * @param {string} name
  * @param {number} score
- * @returns {ScoreEntry[]}
  */
-export function saveScore(name, score) {
-  const existing = getScores();
-  const entry = { name: name.trim().toUpperCase().slice(0, 10), score, date: new Date().toISOString() };
-  const updated = [...existing, entry]
-    .sort((a, b) => b.score - a.score)
-    .slice(0, MAX_ENTRIES);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  return updated;
+function saveLocalScore(name, score) {
+  try {
+    const scores = getLocalScores();
+    scores.push({
+      name: name.toUpperCase().slice(0, 8),
+      score,
+      created_at: new Date().toISOString(),
+    });
+    scores.sort((a, b) => b.score - a.score);
+    localStorage.setItem(LOCAL_KEY, JSON.stringify(scores.slice(0, 10)));
+  } catch {}
 }
 
 /**
- * Removes all stored scores. Debug use only.
- * // TODO API: replace this with fetch() call when backend is ready
+ * Clear all local scores. Debug use only.
  */
 export function clearScores() {
-  localStorage.removeItem(STORAGE_KEY);
+  localStorage.removeItem(LOCAL_KEY);
 }

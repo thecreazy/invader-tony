@@ -3,7 +3,7 @@
  * Reacts to GameState events; does not poll each frame.
  */
 
-import { getScores } from '../services/leaderboard.js';
+import { getLocalScores } from '../services/leaderboard.js';
 import styles from './HUD.css?inline';
 import { injectStyle, removeStyle } from '../utils/dom.js';
 
@@ -26,7 +26,7 @@ export function createHUD(container, gameState, opts = {}) {
 
   const hiEl = document.createElement('div');
   hiEl.className = 'hud-hiscore';
-  const initialHi = getScores()[0]?.score ?? 0;
+  const initialHi = getLocalScores()[0]?.score ?? 0;
   hiEl.textContent = `HI: ${String(initialHi).padStart(5, '0')}`;
   let _hiScore = initialHi;
 

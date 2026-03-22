@@ -424,23 +424,34 @@
         <p class="empty-lb">ANCORA NESSUN PUNTEGGIO<br>SII IL PRIMO!</p>
       </div>
       <script>
-        try {
-          const raw = localStorage.getItem('tony_invaders_scores');
-          const scores = raw ? JSON.parse(raw) : [];
-          const top3 = scores.slice(0, 3);
-          if (top3.length > 0) {
-            const classes     = ['gold', 'silver', 'bronze'];
-            const ranks       = ['#1', '#2', '#3'];
-            const rankClasses = ['rank-gold', 'rank-silver', 'rank-bronze'];
-            const html = '<div class="podium">' + top3.map((s, i) => `
-              <div class="podium-card ${classes[i]}">
-                <span class="podium-rank ${rankClasses[i]}">${ranks[i]}</span>
-                <span class="podium-name">${s.name}</span>
-                <span class="podium-score">${String(s.score).padStart(6,'0')}</span>
-              </div>`).join('') + '</div>';
-            document.getElementById('podium-container').innerHTML = html;
+        function renderPodium(top3) {
+          if (!top3 || top3.length === 0) return;
+          const classes     = ['gold', 'silver', 'bronze'];
+          const ranks       = ['#1', '#2', '#3'];
+          const rankClasses = ['rank-gold', 'rank-silver', 'rank-bronze'];
+          const html = '<div class="podium">' + top3.map((s, i) => `
+            <div class="podium-card ${classes[i] || ''}">
+              <span class="podium-rank ${rankClasses[i] || ''}">${ranks[i] || '#' + (i + 1)}</span>
+              <span class="podium-name">${s.name}</span>
+              <span class="podium-score">${String(s.score).padStart(6, '0')}</span>
+            </div>`).join('') + '</div>';
+          document.getElementById('podium-container').innerHTML = html;
+        }
+
+        (async function () {
+          try {
+            const res = await fetch('/api/scores');
+            if (!res.ok) throw new Error('API error');
+            const scores = await res.json();
+            renderPodium(scores.slice(0, 3));
+          } catch (e) {
+            try {
+              const raw = localStorage.getItem('invadertony_scores_local');
+              const scores = raw ? JSON.parse(raw) : [];
+              renderPodium(scores.slice(0, 3));
+            } catch {}
           }
-        } catch(e) {}
+        })();
       </script>
       <a href="/leaderboard" class="link-more animate-in" style="margin-top:32px">TUTTA LA CLASSIFICA →</a>
     </div>

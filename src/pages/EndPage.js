@@ -5,13 +5,15 @@
  */
 
 import { navigate } from '../router.js';
-import { saveScore } from '../services/leaderboard.js';
+import { saveScore, LeaderboardError } from '../services/leaderboard.js';
 import styles from './EndPage.css?inline';
 import { injectStyle, removeStyle } from '../utils/dom.js';
 import { formatScore } from '../utils/formatScore.js';
 
 const SESSION_SCORE_KEY  = 'tony_invaders_final_score';
 const SESSION_RESULT_KEY = 'tony_invaders_result';
+const SESSION_TOKEN_KEY  = 'cage_invaders_session_token';
+const SESSION_HASH_KEY   = 'cage_invaders_score_hash';
 
 /** @type {HTMLElement | null} */
 let root = null;
@@ -22,9 +24,22 @@ let _cleanupInput = null;
 /** @type {HTMLStyleElement | null} */
 let _styleEl = null;
 
+// ─── Error messages ───────────────────────────────────────────────────────────
+
+const ERROR_MESSAGES = {
+  NICKNAME_PROFANITY:   'NAME NOT ALLOWED',
+  INVALID_NAME:         'INVALID NAME',
+  RATE_LIMIT:           'SLOW DOWN!',
+  MISSING_TOKEN:        'PLAY THE GAME FIRST',
+  INVALID_TOKEN:        'INVALID SESSION',
+  TOKEN_EXPIRED:        'SESSION EXPIRED',
+  SESSION_ALREADY_USED: 'SESSION ALREADY USED',
+  DEFAULT:              'SAVE FAILED',
+};
+
 // ─── DOM builder ──────────────────────────────────────────────────────────────
 
-function buildDOM(score, isWin) {
+function buildDOM(score, isWin, meta = {}) {
   const rootEl = document.createElement('div');
   rootEl.className = 'end-root';
 
@@ -118,25 +133,56 @@ function buildDOM(score, isWin) {
   // ── Name input logic ──────────────────────────────────────────────────────
   let name = '';
   let submitted = false;
+  let _submitting = false;
 
   function renderName() {
     nameDisplayEl.textContent = name.padEnd(8, '_');
   }
   renderName();
 
-  function submitScore() {
-    if (submitted) return;
-    submitted = true;
-    const finalName = name.trim() || 'AAA';
-    saveScore(finalName, score);
+  async function submitScore() {
+    if (submitted || _submitting) return;
+    _submitting = true;
+
     cursorEl.style.display = 'none';
-    nameInputWrap.style.borderColor = '#39ff14';
-    nameInputWrap.style.boxShadow = '0 0 8px #39ff14';
-    savedMsg.textContent = 'SCORE SAVED!';
-    hintEl.textContent = 'PRESS ENTER TO PLAY AGAIN';
+    savedMsg.textContent = 'SAVING...';
+    savedMsg.className = 'end-saved-msg';
+    hintEl.textContent = '';
+
+    const finalName = name.trim() || 'AAA';
+
+    try {
+      await saveScore(finalName, score, meta);
+
+      submitted = true;
+      _submitting = false;
+      nameInputWrap.style.borderColor = '#39ff14';
+      nameInputWrap.style.boxShadow = '0 0 8px #39ff14';
+      savedMsg.textContent = 'SCORE SAVED!';
+      hintEl.textContent = 'PRESS ENTER TO PLAY AGAIN';
+
+    } catch (err) {
+      _submitting = false;
+      cursorEl.style.display = '';
+
+      const msg = err instanceof LeaderboardError
+        ? (ERROR_MESSAGES[err.code] || ERROR_MESSAGES.DEFAULT)
+        : ERROR_MESSAGES.DEFAULT;
+
+      savedMsg.textContent = msg;
+      savedMsg.className = 'end-saved-msg end-save-error';
+      hintEl.textContent = 'TRY AGAIN';
+
+      // Shake animation
+      nameInputWrap.classList.add('end-shake');
+      nameInputWrap.addEventListener('animationend', () => {
+        nameInputWrap.classList.remove('end-shake');
+      }, { once: true });
+    }
   }
 
   function onKeyDown(e) {
+    if (_submitting) return;
     if (submitted) {
       if (e.key === 'Enter' || e.key === ' ') navigate('/game');
       return;
@@ -155,12 +201,13 @@ function buildDOM(score, isWin) {
   window.addEventListener('keydown', onKeyDown);
 
   playAgainBtn.addEventListener('click', () => {
-    if (!submitted) submitScore();
+    // saveScore saves locally first (sync) then hits API in background — safe to navigate immediately
+    if (!submitted && !_submitting) saveScore(name.trim() || 'AAA', score, meta).catch(() => {});
     navigate('/game');
   });
 
   leaderboardBtn.addEventListener('click', () => {
-    if (!submitted) submitScore();
+    if (!submitted && !_submitting) saveScore(name.trim() || 'AAA', score, meta).catch(() => {});
     window.location.href = '/leaderboard';
   });
 
@@ -182,11 +229,13 @@ export function mount(container) {
 
   const scoreRaw  = sessionStorage.getItem(SESSION_SCORE_KEY);
   const resultRaw = sessionStorage.getItem(SESSION_RESULT_KEY);
-  const score  = scoreRaw  ? parseInt(scoreRaw, 10) : 0;
-  const isWin  = resultRaw === 'win';
+  const score        = scoreRaw ? parseInt(scoreRaw, 10) : 0;
+  const isWin        = resultRaw === 'win' || resultRaw === 'victory';
+  const sessionToken = sessionStorage.getItem(SESSION_TOKEN_KEY) || '';
+  const scoreHash    = sessionStorage.getItem(SESSION_HASH_KEY)  || '';
 
   _styleEl = injectStyle(styles);
-  root = buildDOM(score, isWin);
+  root = buildDOM(score, isWin, { sessionToken, scoreHash });
   _container.appendChild(root);
 }
 

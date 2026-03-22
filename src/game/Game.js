@@ -23,6 +23,7 @@ import { createChiptunePlayer } from '../systems/ChiptunePlayer.js';
 import { createPostProcessor }  from './renderer/PostProcessor.js';
 import { createWaveManager }    from './WaveManager.js';
 import { createCollisionSystem } from './CollisionSystem.js';
+import { hashScore } from '../utils/scoreHash.js';
 
 /**
  * @param {HTMLCanvasElement} canvas
@@ -43,6 +44,11 @@ export function createGame(canvas, hudElement) {
   // ── Entities ──────────────────────────────────────────────────────────────
   let player, playerBullets, enemyBullets;
   let boss = null;
+
+  // ── Session token + score hash ────────────────────────────────────────────
+  let _sessionToken = null;
+  let _scoreHash    = '0';
+  let _lastScore    = 0;
 
   // ── Grid / wave state ─────────────────────────────────────────────────────
   const grid = {
@@ -88,6 +94,23 @@ export function createGame(canvas, hudElement) {
 
     // Systems
     gameState      = createGameState();
+
+    // Track score events for the hash chain — proves score was earned incrementally
+    gameState.on('score', (total) => {
+      const delta = total - _lastScore;
+      _lastScore = total;
+      if (delta > 0) {
+        const source = total > 2000 ? 'boss' : 'hit'; // rough heuristic — boss phase starts late
+        _scoreHash = hashScore(_scoreHash, delta, source, total);
+      }
+    });
+
+    // Fetch session token asynchronously — game starts immediately, token arrives before end
+    fetch('/api/session/start', { method: 'POST' })
+      .then(r => r.json())
+      .then(d => { _sessionToken = d.token ?? null; })
+      .catch(() => { _sessionToken = null; });
+
     inputManager   = createInputManager(canvas.parentElement);
     audioManager   = createAudioManager();
     particleSystem = createParticleSystem(scene);
@@ -238,6 +261,8 @@ export function createGame(canvas, hudElement) {
     hud.showMessage('GAME OVER', 1800);
     sessionStorage.setItem('tony_invaders_final_score', String(gameState.score));
     sessionStorage.setItem('tony_invaders_result', 'game_over');
+    sessionStorage.setItem('cage_invaders_session_token', _sessionToken ?? '');
+    sessionStorage.setItem('cage_invaders_score_hash', _scoreHash);
     setTimeout(() => navigate('/end'), 1800);
   }
 
@@ -251,6 +276,8 @@ export function createGame(canvas, hudElement) {
     hud.hideBossBar();
     sessionStorage.setItem('tony_invaders_final_score', String(gameState.score));
     sessionStorage.setItem('tony_invaders_result', 'victory');
+    sessionStorage.setItem('cage_invaders_session_token', _sessionToken ?? '');
+    sessionStorage.setItem('cage_invaders_score_hash', _scoreHash);
     setTimeout(() => navigate('/end'), 1800);
   }
 

@@ -167,40 +167,43 @@
   </footer>
 
   <script>
-    try {
-      const raw    = localStorage.getItem('tony_invaders_scores');
-      const scores = raw ? JSON.parse(raw) : [];
+    function renderScores(scores) {
+      const container = document.getElementById('scores-list');
+      if (!scores || scores.length === 0) {
+        container.innerHTML = '<p class="empty-msg">ANCORA NESSUN PUNTEGGIO<br>SIATE I PRIMI!</p>';
+        return;
+      }
 
-      if (scores.length > 0) {
-        const rankClass = ['rank-1','rank-2','rank-3'];
-        const rankLabel = ['#1','#2','#3'];
+      const rankClass = ['rank-1', 'rank-2', 'rank-3'];
+      const rankLabel = ['#1', '#2', '#3'];
 
-        const rows = scores.map((s, i) => {
-          const rc   = rankClass[i] || 'rank-other';
-          const rank = rankLabel[i] || `#${i+1}`;
-          const even = i % 2 === 1 ? ' row-even' : '';
-          return `<tr class="${even}">
-            <td class="rank ${rc}">${rank}</td>
-            <td class="name">${s.name.slice(0,8).toUpperCase()}</td>
-            <td class="score">${String(s.score).padStart(6,'0')}</td>
-          </tr>`;
-        }).join('');
+      const rows = scores.map((s, i) => {
+        const rc   = rankClass[i] || 'rank-other';
+        const rank = rankLabel[i] || `#${i + 1}`;
+        const even = i % 2 === 1 ? ' row-even' : '';
+        return `<tr class="${even}">
+          <td class="rank ${rc}">${rank}</td>
+          <td class="name">${s.name.slice(0, 8).toUpperCase()}</td>
+          <td class="score">${String(s.score).padStart(6, '0')}</td>
+        </tr>`;
+      }).join('');
 
-        document.getElementById('scores-list').innerHTML = `
-          <table class="scores-table">
-            <thead>
-              <tr>
-                <th>RANK</th>
-                <th>NOME</th>
-                <th>PUNTEGGIO</th>
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>`;
+      container.innerHTML = `
+        <table class="scores-table">
+          <thead>
+            <tr>
+              <th>RANK</th>
+              <th>NOME</th>
+              <th>PUNTEGGIO</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>`;
 
-        // Update JSON-LD with real data
-        const schemaEl = document.getElementById('lb-schema');
-        const schema   = JSON.parse(schemaEl.textContent);
+      // Update JSON-LD with real data
+      const schemaEl = document.getElementById('lb-schema');
+      if (schemaEl) {
+        const schema = JSON.parse(schemaEl.textContent);
         schema.itemListElement = scores.map((s, i) => ({
           '@type': 'ListItem',
           position: i + 1,
@@ -209,7 +212,28 @@
         }));
         schemaEl.textContent = JSON.stringify(schema);
       }
-    } catch(e) {}
+    }
+
+    async function loadScores() {
+      try {
+        const res = await fetch('/api/scores');
+        if (!res.ok) throw new Error('API error');
+        const scores = await res.json();
+        renderScores(scores);
+      } catch (e) {
+        // Fallback to localStorage cache
+        try {
+          const raw = localStorage.getItem('invadertony_scores_local');
+          const scores = raw ? JSON.parse(raw) : [];
+          renderScores(scores);
+        } catch {
+          document.getElementById('scores-list').innerHTML =
+            '<p class="empty-msg">ERRORE DI RETE<br>RIPROVA PIÙ TARDI</p>';
+        }
+      }
+    }
+
+    loadScores();
   </script>
 
 </body>

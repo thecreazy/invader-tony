@@ -1,6 +1,6 @@
 # INVADER TONY
 
-A Space Invaders clone with a 90s Italian internet celebrity twist. Four waves of enemies, a three-phase final boss, procedural audio, and a full CRT post-processing pipeline — all in vanilla JavaScript and Three.js with zero framework dependencies.
+A Space Invaders clone with a 90s style and an Italian internet celebrity twist. Four waves of enemies, a three-phase final boss, procedural audio, and a full CRT post-processing pipeline — all in vanilla JavaScript and Three.js with zero framework dependencies.
 
 ![Game screenshot placeholder](docs/screenshot.png)
 

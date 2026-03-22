@@ -45,7 +45,7 @@ let menuEls = [];
 const MENU_ITEMS = [
   { label: 'PLAY GAME',   route: '/game' },
   { label: 'HIGH SCORES', route: '/leaderboard', external: true },
-  { label: 'CREDITS',     route: '/credits' },
+  { label: 'CREDITS',     route: '/credits',     external: true },
 ];
 
 const GLITCH_FILTER_BASE = 'drop-shadow(0 0 8px #ff6600)';

@@ -14,6 +14,7 @@ function staticPagesPlugin() {
     '/':              'index.html',
     '/how-to-play':   'how-to-play.html',
     '/leaderboard':   'leaderboard.html',
+    '/credits':       'credits.html',
   };
 
   return {

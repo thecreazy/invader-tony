@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Credits — InvaderTony | Riccardo Canella</title>
+  <meta name="description" content="InvaderTony è un gioco arcade browser creato da Riccardo Canella con Three.js, GLSL shaders e Web Audio API. Un tributo goliardico a TonyPitony.">
+  <meta name="author" content="Riccardo Canella">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://invadertony.vercel.app/credits">
+
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://invadertony.vercel.app/credits">
+  <meta property="og:title" content="Credits — InvaderTony | Riccardo Canella">
+  <meta property="og:description" content="InvaderTony è un gioco arcade browser creato da Riccardo Canella. Three.js, GLSL, Web Audio API, vanilla JS.">
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    "name": "Riccardo Canella",
+    "url": "https://invadertony.vercel.app/credits",
+    "sameAs": [
+      "https://github.com/placeholder",
+      "https://linkedin.com/in/placeholder",
+      "https://instagram.com/placeholder"
+    ],
+    "knowsAbout": ["JavaScript", "Three.js", "GLSL", "Game Development", "Web Development"],
+    "description": "Sviluppatore web e game developer. Autore di InvaderTony, gioco arcade browser dedicato a TonyPitony."
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="icon" href="/assets/tony_enemy1.png" type="image/png">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f; --bg2: #0f0f18;
+      --cyan: #00ffff; --magenta: #ff00ff; --yellow: #ffff00; --green: #39ff14;
+      --text: #e8e8f0; --dim: #6a6a8a; --border: rgba(255,255,255,0.08);
+    }
+    body { background: #000; color: var(--text); font-family: 'Space Mono', monospace; }
+
+    #bg-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    .page-wrap { max-width: 680px; margin: 0 auto; padding: 60px 20px 80px; }
+
+    .back-link {
+      display: inline-block; font-size: 10px; color: var(--dim);
+      text-decoration: none; margin-bottom: 48px; letter-spacing: 0.08em;
+    }
+    .back-link:hover { color: var(--cyan); }
+
+    h1 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(16px, 3vw, 26px);
+      color: var(--cyan);
+      text-shadow: 0 0 24px rgba(0,255,255,0.4);
+      margin-bottom: 48px;
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Sections ── */
+    .section { margin-bottom: 48px; }
+
+    .section-label {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      letter-spacing: 0.15em;
+      color: var(--dim);
+      margin-bottom: 16px;
+    }
+
+    .section-value {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 14px;
+      color: var(--green);
+      letter-spacing: 0.08em;
+    }
+
+    /* ── Tech list ── */
+    .tech-list {
+      list-style: none;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .tech-list li {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      color: var(--text);
+      line-height: 1.8;
+    }
+
+    hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+    /* ── Disclaimer ── */
+    .disclaimer-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 10px;
+      color: var(--yellow);
+      letter-spacing: 0.12em;
+      margin-bottom: 20px;
+    }
+
+    .disclaimer-box {
+      background: rgba(255,220,0,0.03);
+      border: 2px solid var(--yellow);
+      padding: 28px 32px;
+      border-radius: 2px;
+    }
+
+    .disclaimer-box p {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 8px;
+      line-height: 2.6;
+      color: var(--text);
+      text-align: center;
+    }
+
+    .disclaimer-box a {
+      color: var(--cyan);
+      text-decoration: none;
+      border-bottom: 1px solid var(--cyan);
+    }
+    .disclaimer-box a:hover { color: var(--magenta); border-color: var(--magenta); }
+
+    /* ── SEO article ── */
+    article { margin-top: 48px; }
+
+    article h2 {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 9px;
+      letter-spacing: 0.12em;
+      margin-bottom: 16px;
+      margin-top: 36px;
+    }
+
+    article p {
+      font-size: 13px;
+      color: var(--dim);
+      line-height: 1.9;
+    }
+
+    article a { color: var(--cyan); text-decoration: none; border-bottom: 1px solid var(--cyan); }
+    article a:hover { color: var(--magenta); border-color: var(--magenta); }
+
+    /* ── CTA ── */
+    .cta-row {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 56px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+    .btn-primary {
+      background: var(--cyan); color: #000;
+      font-family: 'Press Start 2P', monospace; font-size: 11px;
+      padding: 14px 28px; border: none; border-radius: 2px;
+      cursor: pointer; text-decoration: none; display: inline-block;
+      box-shadow: 0 0 20px rgba(0,255,255,0.3);
+      transition: box-shadow 0.15s, transform 0.15s;
+    }
+    .btn-primary:hover { box-shadow: 0 0 40px rgba(0,255,255,0.55); transform: translateY(-2px); }
+    .btn-back {
+      background: transparent; border: 2px solid var(--border);
+      color: var(--dim); font-family: 'Space Mono', monospace; font-size: 11px;
+      padding: 14px 24px; border-radius: 2px;
+      text-decoration: none; display: inline-block;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-back:hover { border-color: var(--cyan); color: var(--cyan); }
+
+    footer { border-top: 1px solid var(--border); padding: 32px 20px; text-align: center; margin-top: 60px; }
+    footer a { font-size: 10px; color: var(--dim); text-decoration: none; margin: 0 12px; }
+    footer a:hover { color: var(--cyan); }
+
+    @media (max-width: 480px) {
+      .cta-row { flex-direction: column; align-items: center; }
+      .disclaimer-box { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="bg-canvas"></canvas>
+
+  <div class="page-wrap">
+
+    <a href="/" class="back-link">← TORNA AL MENU</a>
+
+    <h1>&lt; CREDITS /&gt;</h1>
+
+    <div class="section">
+      <div class="section-label">GAME DESIGN &amp; CODE</div>
+      <div class="section-value">RICCARDO CANELLA</div>
+    </div>
+
+    <div class="section">
+      <div class="section-label">POWERED BY</div>
+      <ul class="tech-list">
+        <li>▸ THREE.JS — 3D &amp; SHADERS</li>
+        <li>▸ VITE — BUILD TOOL</li>
+        <li>▸ GLSL — SHADER MAGIC</li>
+        <li>▸ WEB AUDIO API — PROCEDURAL SOUNDS</li>
+        <li>▸ VANILLA JS — NO FRAMEWORKS WERE HARMED</li>
+      </ul>
+    </div>
+
+    <hr>
+
+    <div class="section">
+      <div class="disclaimer-title">⚠ AVVISO LEGALE ⚠</div>
+      <div class="disclaimer-box">
+        <p>
+          TONY PITONY,<br>
+          PER FAVURI NON MI DENUNCIARE.<br><br>
+          CHISTU JOCU È SULU UN TRIBUTU,<br>
+          IO NON TENGO NIENTE.<br><br>
+          TI GIURU CA TUTTU CHISTU<br>
+          LU FAZZU SULU PI GOLIARDIA.<br>
+          NON CI STAJU GUADAGNANDO UN EURO,<br>
+          ANZI SI VUOI TI PAGU NA BIRRA.<br><br>
+          TORNU IN SICILIA SULU PI OFFRITILLA —<br>
+          TE LO GIUROOOO, COMPÀ.<br><br>
+          È TUTTU GRATUITU.<br>
+          PURU U CODICI SORGENTI È GRATIS<br>
+          E SI TROVA SU GITHUB:<br><br>
+          <a href="#" target="_blank" rel="noopener">GITHUB — VIENI A GUARDARE</a><br><br>
+          VUOI LA BIRRA? SCRIVIMI:<br><br>
+          <a href="#" target="_blank" rel="noopener">LINKEDIN</a>
+          &nbsp;&nbsp;
+          <a href="#" target="_blank" rel="noopener">INSTAGRAM</a><br><br>
+          TI PREGU COMPÀ,<br>
+          NON MI DENUNCIARI... 🙏
+        </p>
+      </div>
+    </div>
+
+    <article>
+      <h2 style="color:var(--cyan)">IL PROGETTO</h2>
+      <p>InvaderTony è un gioco arcade browser sviluppato da Riccardo Canella come esperimento creativo con Claude AI di Anthropic. Il progetto esplora le possibilità di sviluppo assistito da intelligenza artificiale applicato al game development con Three.js e GLSL shaders.</p>
+
+      <h2 style="color:var(--yellow)">TECNOLOGIA</h2>
+      <p>Il gioco è costruito interamente con tecnologie web standard: Three.js per il motore 3D e gli shader GLSL, Vite come build tool, Web Audio API per l'audio procedurale, vanilla JavaScript senza framework. Il codice sorgente è open source e disponibile su <a href="#" target="_blank" rel="noopener">GitHub</a>.</p>
+
+      <h2 style="color:var(--magenta)">ISPIRAZIONE</h2>
+      <p>InvaderTony è un tributo goliardico a TonyPitony, cantautore siciliano noto per il suo stile provocatorio, la maschera da Elvis e i testi irriverenti. Il gioco non ha scopo commerciale ed è distribuito gratuitamente.</p>
+    </article>
+
+    <div class="cta-row">
+      <a href="/home" class="btn-primary">► GIOCA ORA</a>
+      <a href="/"     class="btn-back">← TORNA AL MENU</a>
+    </div>
+
+  </div>
+
+  <footer>
+    <a href="/">HOME</a>
+    <a href="/leaderboard">CLASSIFICA</a>
+    <a href="/how-to-play">COME SI GIOCA</a>
+  </footer>
+
+  <script>
+  (function () {
+    var canvas = document.getElementById('bg-canvas');
+    var gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) return;
+
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    var VS = [
+      'attribute vec2 aPos;',
+      'varying vec2 vUv;',
+      'void main(){',
+      '  vUv = aPos * 0.5 + 0.5;',
+      '  gl_Position = vec4(aPos, 0.0, 1.0);',
+      '}'
+    ].join('\n');
+
+    // Ported verbatim from src/game/shaders/starfield/starfield.frag
+    var FS = [
+      'precision mediump float;',
+      'uniform float uTime;',
+      'varying vec2 vUv;',
+
+      'float hash(vec2 p){',
+      '  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);',
+      '}',
+
+      'vec2 cellSample(vec2 uv, vec2 grid){',
+      '  vec2 scaled = uv * grid;',
+      '  vec2 cell   = floor(scaled);',
+      '  vec2 local  = fract(scaled);',
+      '  float hx    = hash(cell + vec2(1.73, 0.0));',
+      '  float hy    = hash(cell + vec2(0.0,  1.73));',
+      '  vec2  center = vec2(0.15 + hx * 0.7, 0.15 + hy * 0.7);',
+      '  return vec2(length(local - center), hash(cell));',
+      '}',
+
+      'void main(){',
+      '  vec3 color = vec3(0.0);',
+
+      '  {',
+      '    vec2 s = cellSample(vUv, vec2(80.0, 45.0));',
+      '    float dist = s.x; float h = s.y;',
+      '    if(h > 0.97){',
+      '      float tw = 0.6 + 0.4 * sin(uTime * (1.0 + h * 3.0) + h * 6.2832);',
+      '      float core = smoothstep(0.012, 0.0, dist);',
+      '      color += core * tw * vec3(0.7, 0.8, 1.0) * 0.90;',
+      '    }',
+      '  }',
+
+      '  {',
+      '    vec2 uv2 = vec2(vUv.x, fract(vUv.y + uTime * 0.04));',
+      '    vec2 s = cellSample(uv2, vec2(40.0, 22.0));',
+      '    float dist = s.x; float h = s.y;',
+      '    if(h > 0.94){',
+      '      float tw = 0.7 + 0.3 * sin(uTime * (0.8 + h * 2.0) + h * 6.2832);',
+      '      float core = smoothstep(0.018, 0.0, dist);',
+      '      float halo = smoothstep(0.06,  0.0, dist) * 0.25;',
+      '      color += (core + halo) * tw * vec3(1.0, 0.95, 0.8);',
+      '    }',
+      '  }',
+
+      '  {',
+      '    vec2 uv3 = vec2(vUv.x, fract(vUv.y + uTime * 0.10));',
+      '    vec2 s = cellSample(uv3, vec2(20.0, 11.0));',
+      '    float dist = s.x; float h = s.y;',
+      '    if(h > 0.92){',
+      '      float tw = 0.65 + 0.35 * sin(uTime * (1.5 + h * 2.5) + h * 6.2832);',
+      '      float core = smoothstep(0.025, 0.0, dist);',
+      '      float halo = smoothstep(0.10,  0.0, dist) * 0.30;',
+      '      color += (core + halo) * tw * vec3(0.8, 0.6, 1.0) * 1.1;',
+      '    }',
+      '  }',
+
+      '  {',
+      '    float cycleT = fract(uTime * 0.125);',
+      '    if(cycleT < 0.05){',
+      '      float prog = cycleT / 0.05;',
+      '      vec2 A = vec2(0.85, 0.05);',
+      '      vec2 B = vec2(0.18, 0.78);',
+      '      vec2 dir = normalize(B - A);',
+      '      float total   = length(B - A);',
+      '      float tailLen = 0.14;',
+      '      float headD   = prog * total;',
+      '      vec2  toP   = vUv - A;',
+      '      float along = dot(toP, dir);',
+      '      float perp  = length(toP - along * dir);',
+      '      float tailStart = max(0.0, headD - tailLen);',
+      '      float inTail = step(tailStart, along) * step(along, headD);',
+      '      float fade   = clamp((along - tailStart) / max(tailLen, 0.0001), 0.0, 1.0);',
+      '      float streak = inTail * smoothstep(0.006, 0.0, perp) * fade;',
+      '      float lifeFade = 1.0 - smoothstep(0.7, 1.0, prog);',
+      '      color += mix(vec3(0.0, 0.85, 1.0), vec3(1.0), fade) * streak * lifeFade * 2.5;',
+      '    }',
+      '  }',
+
+      '  gl_FragColor = vec4(clamp(color, 0.0, 1.0), 1.0);',
+      '}'
+    ].join('\n');
+
+    function compileShader(type, src) {
+      var s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      return s;
+    }
+
+    var prog = gl.createProgram();
+    gl.attachShader(prog, compileShader(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, compileShader(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog);
+    gl.useProgram(prog);
+
+    var buf = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 1,-1, -1,1, 1,1]), gl.STATIC_DRAW);
+
+    var aPos = gl.getAttribLocation(prog, 'aPos');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    var uTime = gl.getUniformLocation(prog, 'uTime');
+    var startTime = null;
+
+    function tick(now) {
+      if (!startTime) startTime = now;
+      gl.uniform1f(uTime, (now - startTime) / 1000);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  })();
+  </script>
+
+</body>
+</html>

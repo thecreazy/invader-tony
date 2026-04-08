@@ -1,15 +1,18 @@
+import { getAudioUrl } from '../LoadingScreen.js';
+
 export function createChiptunePlayer() {
   let audio = null;
 
   return {
     play() {
       if (!audio) {
-        audio = new Audio('/assets/donne_ricche.ogg');
+        // getAudioUrl() returns the blob URL preloaded by LoadingScreen (already in memory)
+        audio = new Audio(getAudioUrl());
         audio.loop = true;
         audio.volume = 0.5;
-        audio.preload = 'none'; // don't fetch until first play()
       }
-      audio.play().catch(() => {});
+      // Return the promise so callers can detect autoplay blocks
+      return audio.play();
     },
 
     stop() {

@@ -288,10 +288,15 @@ export function createGame(canvas, hudElement) {
     start() {
       clock.start();
       loop();
-      // Web Audio requires a user gesture before AudioContext can start.
-      // Start music on the first keypress or touch.
-      window.addEventListener('keydown', () => chiptunePlayer.play(), { once: true });
-      canvas.addEventListener('touchstart', () => chiptunePlayer.play(), { once: true });
+      // Try to start music immediately — navigating to the game page via
+      // Enter/click/tap counts as a user gesture in most browsers.
+      // If the autoplay policy blocks it (strict environments), fall back
+      // to the first keydown or touchstart.
+      chiptunePlayer.play().catch(() => {
+        const onFirstInput = () => chiptunePlayer.play();
+        window.addEventListener('keydown',   onFirstInput, { once: true });
+        canvas.addEventListener('touchstart', onFirstInput, { once: true });
+      });
     },
 
     stop() {

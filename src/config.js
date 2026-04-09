@@ -39,7 +39,7 @@ export const CONFIG = {
   GAMEPLAY: {
     EDGE_RIGHT:          5.5,
     EDGE_LEFT:          -5.5,
-    INVADER_FLOOR_Y:    -6.5,
+    INVADER_FLOOR_Y:    -3.2,
     SHOCKWAVE_POOL_SIZE:  5,
   },
 
@@ -51,7 +51,7 @@ export const CONFIG = {
       cols: 8,
       rows: 3,
       enemyTypes: ['basic', 'basic', 'basic'],
-      speedMultiplier: 1.0,
+      speedMultiplier: 3.0,
       shootIntervalMin: 2000,
       shootIntervalMax: 4500,
       dropAmount: 0.28,

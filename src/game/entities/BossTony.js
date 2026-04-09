@@ -56,8 +56,8 @@ export function createBossTony(scene, opts) {
     undefined,
     (err) => console.error('[BossTony] texture load failed:', err),
   );
-  bossTexture.magFilter = THREE.NearestFilter;
-  bossTexture.minFilter = THREE.NearestFilter;
+  bossTexture.magFilter = THREE.LinearFilter;
+  bossTexture.minFilter = THREE.LinearFilter;
   bossTexture.generateMipmaps = false;
 
   const geom = new THREE.PlaneGeometry(3.5, 4.0);

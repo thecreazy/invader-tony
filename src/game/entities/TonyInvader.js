@@ -20,16 +20,16 @@ function getTexture(type) {
   if (type === 'elite') {
     if (!textureElite) {
       textureElite = new THREE.TextureLoader().load('/assets/tony_enemy2.png');
-      textureElite.magFilter = THREE.NearestFilter;
-      textureElite.minFilter = THREE.NearestFilter;
+      textureElite.magFilter = THREE.LinearFilter;
+      textureElite.minFilter = THREE.LinearFilter;
       textureElite.generateMipmaps = false;
     }
     return textureElite;
   } else {
     if (!textureBasic) {
       textureBasic = new THREE.TextureLoader().load('/assets/tony_enemy1.png');
-      textureBasic.magFilter = THREE.NearestFilter;
-      textureBasic.minFilter = THREE.NearestFilter;
+      textureBasic.magFilter = THREE.LinearFilter;
+      textureBasic.minFilter = THREE.LinearFilter;
       textureBasic.generateMipmaps = false;
     }
     return textureBasic;

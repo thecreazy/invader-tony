@@ -9,27 +9,46 @@ The architecture is organised around three principles:
 2. **Explicit lifecycle** — every subsystem has a `mount`/`unmount` or `init`/`destroy` pair. Nothing leaks.
 3. **Zero allocations in the hot path** — object pooling and pre-allocated vectors throughout the game loop.
 
+The codebase is fully TypeScript (strict mode). Vite handles transpilation; `tsc --noEmit` is used for type checking only.
+
 ---
 
 ## Module Map
 
 ```
-main.js
-  ├── BackgroundRenderer (init)   ← boots first, persists across all routes
+main.ts
+  ├── LoadingScreen (showLoadingScreen)  ← preloads all assets before anything mounts
+  ├── BackgroundRenderer (init)          ← boots after load, persists across all routes
   └── router (initRouter)
         ├── #home   → HomePage
+        │               ├── HomeDOM
+        │               └── HomeController
         ├── #game   → GamePage
-        │               └── Game
-        │                     ├── GameState
-        │                     ├── InputManager
-        │                     ├── AudioManager
-        │                     ├── ParticleSystem
-        │                     ├── Player
-        │                     ├── Bullet (×2 pools)
-        │                     ├── TonyInvader (×N)
-        │                     ├── BossTony
-        │                     └── HUD
+        │               └── GameOrchestrator
+        │                     ├── GameState         (core/)
+        │                     ├── GameLoop          (core/)
+        │                     ├── SceneSetup        (core/)
+        │                     ├── InputManager      (systems/)
+        │                     ├── AudioManager      (systems/)
+        │                     ├── ChiptunePlayer    (systems/)
+        │                     ├── ParticleSystem    (systems/)
+        │                     ├── CollisionSystem   (systems/)
+        │                     ├── WaveManager       (systems/)
+        │                     ├── GridMovement      (systems/)
+        │                     ├── WaveSpawner       (systems/)
+        │                     ├── PlayerEntity      (entities/)
+        │                     ├── BulletPool ×2     (entities/)
+        │                     ├── InvaderEntity ×N  (entities/)
+        │                     ├── BossEntity        (entities/)
+        │                     ├── PostProcessor     (rendering/)
+        │                     ├── ShockwavePool     (rendering/)
+        │                     ├── TonyModeController (orchestration/)
+        │                     ├── BossSpawner       (orchestration/)
+        │                     ├── EndConditions     (orchestration/)
+        │                     └── HUD               (ui/)
         ├── #end    → EndPage
+        │               ├── EndDOM
+        │               └── EndController
         └── #leaderboard → LeaderboardPage
 ```
 
@@ -38,22 +57,23 @@ main.js
 ## Boot Sequence
 
 ```
-1. index.html loads → <script type="module" src="/src/main.js">
-2. main.js:
-   a. BackgroundRenderer.init()   — starfield canvas inserted before #app; rAF loop starts
-   b. router.initRouter(#app)     — reads window.location.hash; navigates to #home
-3. router mounts HomePage          — title screen rendered; user interacts
-4. user presses PLAY               — router.navigate('#game')
-5. router unmounts HomePage        — removes DOM, cleans listeners
+1. app.html loads → <script type="module" src="/src/main.ts">
+2. main.ts:
+   a. showLoadingScreen()             — preloads JS chunks, sprites, audio
+   b. BackgroundRenderer.init()       — starfield canvas inserted before #app; rAF loop starts
+   c. router.initRouter()             — reads window.location.hash; navigates to #home
+3. router mounts HomePage             — title screen rendered; user interacts
+4. user presses PLAY                  — router.navigate('#game')
+5. router unmounts HomePage           — removes DOM, cleans listeners
 6. router dynamically imports GamePage — code-split chunk loads Three.js
 7. GamePage.mount(container):
    a. BackgroundRenderer.pause()
    b. creates <canvas> + HUD <div>
-   c. Game.init()  — Three.js setup, post-processing, entity creation
-   d. Game.start() — rAF loop begins
+   c. GameOrchestrator.init()  — Three.js setup, post-processing, entity creation
+   d. GameOrchestrator.start() — rAF loop begins
 8. game ends (game over or victory) → sessionStorage handoff → navigate('#end')
 9. GamePage.unmount():
-   a. Game.destroy()  — disposes all Three.js objects, cancels rAF
+   a. GameOrchestrator.destroy()  — disposes all Three.js objects, cancels rAF
    b. BackgroundRenderer.resume()
 10. EndPage renders score + name input
 11. user saves → navigate('#leaderboard') or '#game'
@@ -63,7 +83,7 @@ main.js
 
 ## Routing
 
-`src/router.js` implements a minimal hash router:
+`src/router.ts` implements a minimal hash router:
 
 ```
 window.hashchange → router.navigate(hash)
@@ -72,42 +92,42 @@ window.hashchange → router.navigate(hash)
   → mount(container)
 ```
 
-Pages export `{ mount, unmount }`. The router handles both named-export objects (`mod.GamePage`) and bare exports.
+Pages export `{ mount, unmount }`. The router handles both named-export objects and bare exports.
 
 Routes:
 
 | Hash | Module | Purpose |
 |---|---|---|
-| `#home` | `pages/HomePage.js` | Title screen |
-| `#game` | `pages/GamePage.js` | Game canvas |
-| `#end` | `pages/EndPage.js` | Score entry |
-| `#leaderboard` | `pages/LeaderboardPage.js` | High scores |
+| `#home` | `pages/home/HomePage.ts` | Title screen |
+| `#game` | `pages/GamePage.ts` | Game canvas |
+| `#end` | `pages/end/EndPage.ts` | Score entry |
+| `#leaderboard` | `pages/LeaderboardPage` | High scores |
 
 ---
 
 ## Game Loop
 
 ```
-requestAnimationFrame(loop)
+requestAnimationFrame(loop)   ← owned by GameLoop.ts
   │
   ├── delta = clock.getDelta()        (capped at 50ms)
   │
-  ├── update(delta)
+  ├── update(delta)                   ← GameOrchestrator
   │     ├── player.update()           — movement, shoot cooldown, flash timer
   │     ├── playerBullets.updateAll() — translate active bullets, deactivate OOB
   │     ├── enemyBullets.updateAll()
   │     ├── particleSystem.update()   — translate, age, deactivate particles
-  │     ├── updateGrid(delta)         — grid translation, edge bounce, drop, shoot timer
+  │     ├── updateGrid(delta)         — GridMovement: translation, edge bounce, drop, shoot timer
   │     ├── boss.update(delta)        — entry animation, movement pattern, shoot pattern
-  │     ├── checkCollisions()         — AABB-ish distance checks, pooled vectors _pA/_pB
-  │     └── checkWinLose()            — wave advance / boss spawn / game over / victory
+  │     ├── collisions.check()        — AABB-ish distance checks, pooled vectors _pA/_pB
+  │     └── EndConditions.check()     — wave advance / boss spawn / game over / victory
   │
-  ├── updateEffects(delta)            — always runs regardless of game state
+  ├── updateEffects(delta)            — EffectManager: always runs regardless of game state
   │     ├── uDamageFlash fade         — 3.3 units/s decay
   │     ├── uWarpIntensity fade       — 1.25 units/s decay
   │     └── uChromaticAberration      — lerped from boss HP ratio
   │
-  └── renderFrame(delta)
+  └── renderFrame(delta)              — PostProcessor
         ├── starfieldMaterial.uTime  += delta
         ├── Pass 1: scene → rtPingA   (game world render)
         ├── Pass 2: shockwave ping-pong (active slots only, max 5)
@@ -118,7 +138,7 @@ requestAnimationFrame(loop)
 
 ## Post-Processing Pipeline
 
-The game uses a multi-pass post-processing pipeline built on `WebGLRenderTarget` ping-pong.
+The game uses a multi-pass post-processing pipeline built on `WebGLRenderTarget` ping-pong. Owned by `src/rendering/PostProcessor.ts`.
 
 ```
 Three.js scene
@@ -128,7 +148,7 @@ Three.js scene
       │          Background starfield plane (z=-5) included here
       │
       ▼
- shockwave passes (0–5, active only)
+ shockwave passes (0–5, active only)   ← ShockwavePool.ts
   src → dst   ←── each active slot runs one full-screen shockwave distortion
   dst → src   ←── ping-pong swap after each pass
       │
@@ -140,36 +160,36 @@ Three.js scene
    screen
 ```
 
-All intermediate passes use `OrthographicCamera(-1,1,1,-1,0,1)` with a `PlaneGeometry(2,2)` fullscreen quad. The shockwave geometry is created and disposed each frame (cheap, no persistent allocation needed per the existing pool).
+All intermediate passes use `OrthographicCamera(-1,1,1,-1,0,1)` with a `PlaneGeometry(2,2)` fullscreen quad.
 
 ---
 
 ## State Machine
 
-`GameState` tracks these phases:
+`src/core/GameState.ts` tracks these phases (enum `GamePhase`):
 
 ```
 IDLE → PLAYING → BOSS_FIGHT → VICTORY
-                           ↘ GAME_OVER
+                            ↘ GAME_OVER
 PLAYING → GAME_OVER
 ```
 
-State transitions are explicit (`gameState.transition(STATES.X)`). The HUD subscribes to `score`, `lives`, and `wave` events via a simple `on`/`off` emitter. No polling.
+State transitions are explicit (`gameState.transition(GamePhase.X)`). The HUD subscribes to `score`, `lives`, and `wave` events via a simple `on`/`off` emitter. No polling.
 
 ---
 
 ## Wave System
 
-Wave configuration lives entirely in `src/config.js`:
+Wave configuration lives entirely in `src/config.ts`:
 
-```js
+```ts
 WAVES: [
   { id, label, cols, rows, enemyTypes[], speedMultiplier, shootIntervalMin, shootIntervalMax, dropAmount },
   ...
 ]
 ```
 
-`spawnGrid(waveConfig)` in `Game.js` reads this config directly. The grid speed is scaled dynamically: when fewer than 30% of enemies remain, speed ramps up proportionally (classic Space Invaders behaviour). Wave progression:
+`WaveSpawner.ts` spawns the grid from config. `GridMovement.ts` handles translation, edge bounce, drop, and speed scaling. Wave progression:
 
 ```
 Wave 1 cleared → show "WAVE 2" message → triggerWarp → 2.2s pause → spawn wave 2
@@ -184,7 +204,7 @@ Boss dies      → triggerVictory() → navigate('#end')
 
 Every entity follows the same pattern:
 
-```js
+```ts
 const entity = createXxx(scene, opts);
 // Game loop calls:
 entity.update(delta, ...);
@@ -193,7 +213,7 @@ entity.takeDamage();
 entity.dispose();  // removes from scene, disposes geometries/materials
 ```
 
-Shared textures (`TonyInvader`) are an exception — they are disposed separately via `disposeInvaderResources()` when all invaders are gone, to avoid premature disposal while others are still dissolving.
+Shared textures (`InvaderEntity`) are an exception — they are disposed separately via `disposeInvaderResources()` when all invaders are gone, to avoid premature disposal while others are still dissolving.
 
 ---
 
@@ -204,7 +224,7 @@ Shared textures (`TonyInvader`) are an exception — they are disposed separatel
 | Player bullets | 30 | `createBulletPool(scene, 30, 'player')` |
 | Enemy bullets | 30 | `createBulletPool(scene, 30, 'enemy')` |
 | Particles | 200 | `createParticleSystem(scene)` |
-| Shockwaves | 5 | `shockwavePool[]` in `Game.js` |
+| Shockwaves | 5 | `ShockwavePool` in `rendering/ShockwavePool.ts` |
 
 All pools pre-create meshes/materials at init. `acquire()` returns the first inactive slot or `null` (silently dropped if pool is full). Nothing is `new`'d inside the game loop.
 
@@ -212,10 +232,10 @@ All pools pre-create meshes/materials at init. `acquire()` returns the first ina
 
 ## Data Flow: Score & Result Handoff
 
-The game page cannot directly pass data to the end page (they are separate JS modules loaded at different times). Data is passed via `sessionStorage`:
+The game page cannot directly pass data to the end page (separate modules, different lifetimes). Data is passed via `sessionStorage`:
 
 ```
-Game.js triggerGameOver():
+GameOrchestrator / EndConditions triggerGameOver():
   sessionStorage.setItem('tony_invaders_final_score', score)
   sessionStorage.setItem('tony_invaders_result', 'game_over')
   navigate('#end')
@@ -225,7 +245,7 @@ EndPage.mount():
   result = sessionStorage.getItem('tony_invaders_result')
 ```
 
-On `saveScore()`, the entry is written to `localStorage` via `src/services/leaderboard.js`. This is the only file that touches storage — swapping to a REST API requires changing only that file.
+On `saveScore()`, the entry is written to `localStorage` via `src/services/leaderboard.ts`. This is the only file that touches storage — swapping to a REST API requires changing only that file.
 
 ---
 
@@ -235,22 +255,32 @@ On `saveScore()`, the entry is written to `localStorage` via `src/services/leade
 
 Stacking works purely via DOM order: the background canvas is the first child of `<body>`; all page root elements (`position: fixed`) are inside `#app` which follows in document order, so they naturally paint on top without requiring explicit `z-index`.
 
-During gameplay, `BackgroundRenderer.pause()` stops rendering (but keeps the canvas in the DOM) to avoid running two WebGL renderers simultaneously. The game scene has its own embedded starfield plane.
+During gameplay, `BackgroundRenderer.pause()` stops rendering (but keeps the canvas in the DOM) to avoid running two WebGL renderers simultaneously. The game scene has its own embedded starfield plane via `StarfieldBackground.ts`.
 
 ---
 
 ## Leaderboard Service Interface
 
-`src/services/leaderboard.js` exposes a storage-agnostic interface:
+`src/services/leaderboard.ts` exposes a storage-agnostic interface:
 
-```js
+```ts
 getScores()              // → ScoreEntry[]  sorted desc
 saveScore(name, score)   // → ScoreEntry[]  updated array
 clearScores()            // → void          debug only
 ```
 
 ```ts
-type ScoreEntry = { name: string, score: number, date: string }
+type ScoreEntry = { name: string; score: number; date: string }
 ```
 
-To migrate from `localStorage` to a REST API, only this file changes. All callers (`EndPage`, `LeaderboardPage`, `HUD`) are unaffected.
+To migrate from `localStorage` to a REST API, only this file changes. All callers (`EndController`, `HUD`) are unaffected.
+
+---
+
+## TypeScript Conventions
+
+- Factory functions (`createXxx`) are preferred over classes
+- Shared interfaces in `src/types/` — `entities.ts`, `game.ts`, `rendering.ts`
+- All magic numbers in `src/config.ts` — no inline literals in game logic
+- Unused parameters prefixed with `_` (e.g. `_event`) to satisfy the linter
+- `strict: true` in `tsconfig.json` — no implicit any, strict null checks

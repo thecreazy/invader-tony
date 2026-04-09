@@ -23,13 +23,13 @@
 ```
 
 [![License: MIT](https://img.shields.io/badge/LICENSE-MIT-39ff14?style=flat-square)](#license)
-[![Vanilla JS](https://img.shields.io/badge/VANILLA-JS-ffaa00?style=flat-square&logo=javascript&logoColor=000)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
+[![TypeScript](https://img.shields.io/badge/TYPESCRIPT-3178C6?style=flat-square&logo=typescript&logoColor=fff)](https://www.typescriptlang.org/)
 [![Three.js](https://img.shields.io/badge/THREE.JS-000000?style=flat-square&logo=three.js)](https://threejs.org/)
 [![Vite](https://img.shields.io/badge/VITE-646CFF?style=flat-square&logo=vite&logoColor=fff)](https://vitejs.dev/)
 [![Deployed on Vercel](https://img.shields.io/badge/VERCEL-000?style=flat-square&logo=vercel)](https://vercel.com/)
 
-*Space Invaders clone — 4 progressive waves · 3-phase boss · CRT post-processing · procedural audio*  
-*Vanilla JS + Three.js · Zero framework dependencies*
+*Space Invaders clone — 4 progressive waves · 3-phase boss · CRT post-processing*  
+*TypeScript + Three.js · Zero framework dependencies*
 
 </div>
 
@@ -86,9 +86,11 @@
 | CONCERN | SOLUTION |
 |---|---|
 | Bundler | [Vite](https://vitejs.dev/) |
+| Language | TypeScript (strict, `noEmit` — Vite transpiles) |
 | 3D / shaders | [Three.js](https://threejs.org/) |
 | GLSL import | [vite-plugin-glsl](https://github.com/UstymUkhman/vite-plugin-glsl) |
-| Language | Vanilla ES modules — no TypeScript |
+| Linting | ESLint 9 flat config + typescript-eslint |
+| Formatting | Prettier |
 | Styling | Plain CSS injected per-page — no framework |
 | Package manager | pnpm |
 | Backend | Vercel Serverless Functions (Node.js ESM) |
@@ -143,6 +145,15 @@ Output in `dist/`. Chunks are code-split by route — the Three.js bundle only l
 
 ```bash
 pnpm preview
+```
+
+**Code quality**
+
+```bash
+pnpm typecheck      # TypeScript type check (tsc --noEmit)
+pnpm lint           # ESLint on src/
+pnpm format         # Prettier — auto-fix formatting
+pnpm format:check   # Prettier — check only (CI)
 ```
 
 ---
@@ -277,7 +288,7 @@ PLAYER SUBMITS SCORE  (End screen, on Enter)
 
 ### SCORE HASH CHAIN
 
-During gameplay, `src/utils/scoreHash.js` builds a hash chain over every score increment:
+During gameplay, `src/utils/scoreHash.ts` builds a hash chain over every score increment:
 
 ```
 hash₀ = '0'
@@ -290,7 +301,7 @@ The final hash is sent with the submission. Stored for future server-side replay
 
 ### CLIENT-SIDE DATA LAYER
 
-`src/services/leaderboard.js` is the single abstraction over all score I/O:
+`src/services/leaderboard.ts` is the single abstraction over all score I/O:
 
 - `getScores()` — async, hits `/api/scores`, caches to localStorage on success, falls back to cache on error
 - `saveScore(name, score, meta)` — saves locally first (sync, never lost), then posts to the API with `sessionToken` and `scoreHash` from `meta`
@@ -365,54 +376,97 @@ CREATE POLICY "No public access" ON game_sessions USING (false);
 │   └── how-to-play.html
 │
 ├── src/
-│   ├── main.js                      # Entry point: loading screen → bg renderer → router
-│   ├── LoadingScreen.js             # Arcade loading overlay — preloads all assets
-│   ├── config.js                    # All magic numbers (speeds, HP, wave definitions)
-│   ├── router.js                    # SPA router — /home /game /end
+│   ├── main.ts                      # Entry point: loading screen → bg renderer → router
+│   ├── router.ts                    # Hash-based SPA router — #home #game #end
+│   ├── config.ts                    # All magic numbers (speeds, HP, wave definitions)
+│   ├── vite-env.d.ts
+│   │
+│   ├── core/                        # Engine primitives
+│   │   ├── GameLoop.ts
+│   │   ├── GameState.ts             # State machine + event emitter
+│   │   └── SceneSetup.ts
+│   │
+│   ├── entities/                    # Three.js game objects
+│   │   ├── PlayerEntity.ts
+│   │   ├── InvaderEntity.ts         # Grid enemies (basic + elite)
+│   │   ├── BulletPool.ts            # Object-pooled projectiles
+│   │   ├── BossEntity.ts            # Final boss entry point
+│   │   ├── BossGeometry.ts
+│   │   ├── BossMovement.ts
+│   │   ├── BossAttack.ts
+│   │   └── BossPhases.ts
+│   │
+│   ├── systems/                     # Stateless game systems
+│   │   ├── AudioManager.ts          # Procedural SFX via Web Audio API
+│   │   ├── ChiptunePlayer.ts        # Background music (blob URL, instant playback)
+│   │   ├── CollisionSystem.ts
+│   │   ├── GridMovement.ts
+│   │   ├── InputManager.ts
+│   │   ├── ParticleSystem.ts
+│   │   ├── WaveManager.ts
+│   │   └── WaveSpawner.ts
+│   │
+│   ├── orchestration/               # Wires systems + entities together
+│   │   ├── GameOrchestrator.ts      # Main loop owner, session token fetch
+│   │   ├── BossSpawner.ts
+│   │   ├── EndConditions.ts
+│   │   └── TonyModeController.ts
+│   │
+│   ├── rendering/                   # Post-processing pipeline
+│   │   ├── PostProcessor.ts
+│   │   ├── EffectManager.ts
+│   │   ├── ShockwavePool.ts
+│   │   └── StarfieldBackground.ts
+│   │
+│   ├── loading/                     # Asset preloading
+│   │   ├── LoadingScreen.ts
+│   │   ├── LoadingOverlay.ts
+│   │   ├── AssetLoader.ts
+│   │   └── AudioCache.ts
 │   │
 │   ├── background/
-│   │   └── BackgroundRenderer.js    # Persistent fullscreen starfield (all pages)
+│   │   └── BackgroundRenderer.ts    # Persistent fullscreen starfield (all pages)
 │   │
 │   ├── pages/
-│   │   ├── HomePage.js / .css       # Title screen
-│   │   ├── GamePage.js              # Mounts Three.js canvas + HUD
-│   │   └── EndPage.js / .css        # Game Over / Victory + name entry + score submit
+│   │   ├── GamePage.ts              # Mounts Three.js canvas + HUD
+│   │   ├── CreditsPage.ts
+│   │   ├── home/
+│   │   │   ├── HomePage.ts
+│   │   │   ├── HomeDOM.ts
+│   │   │   └── HomeController.ts
+│   │   └── end/
+│   │       ├── EndPage.ts           # Game Over / Victory + name entry + score submit
+│   │       ├── EndDOM.ts
+│   │       └── EndController.ts
 │   │
-│   ├── game/
-│   │   ├── Game.js                  # Main orchestrator, game loop, session token fetch
-│   │   ├── GameState.js             # State machine + event emitter
-│   │   ├── CollisionSystem.js
-│   │   ├── WaveManager.js
-│   │   │
-│   │   ├── entities/
-│   │   │   ├── Player.js
-│   │   │   ├── Bullet.js            # Object-pooled projectiles
-│   │   │   ├── TonyInvader.js       # Grid enemies (basic + elite)
-│   │   │   └── BossTony.js          # Final boss
-│   │   │
-│   │   └── shaders/
-│   │       ├── starfield/
-│   │       ├── scanlines/
-│   │       ├── shockwave/
-│   │       └── dissolve/
-│   │
-│   ├── systems/
-│   │   ├── AudioManager.js          # Procedural SFX via Web Audio API
-│   │   ├── ChiptunePlayer.js        # Background music (blob URL, instant playback)
-│   │   ├── InputManager.js
-│   │   └── ParticleSystem.js
-│   │
-│   ├── ui/
-│   │   └── HUD.js / .css
+│   ├── types/                       # Shared TypeScript interfaces
+│   │   ├── entities.ts
+│   │   ├── game.ts
+│   │   └── rendering.ts
 │   │
 │   ├── services/
-│   │   └── leaderboard.js           # API-first data layer + localStorage fallback
+│   │   ├── leaderboard.ts           # API-first data layer + localStorage fallback
+│   │   └── seo.ts
 │   │
-│   └── utils/
-│       ├── dom.js                   # injectStyle / removeStyle
-│       ├── formatScore.js
-│       └── scoreHash.js             # djb2 hash chain for score verification
+│   ├── ui/
+│   │   └── HUD.ts
+│   │
+│   ├── utils/
+│   │   ├── dom.ts                   # injectStyle / removeStyle
+│   │   ├── formatScore.ts
+│   │   ├── konamiCode.ts
+│   │   └── scoreHash.ts             # djb2 hash chain for score verification
+│   │
+│   └── game/
+│       └── shaders/                 # GLSL — imported via vite-plugin-glsl
+│           ├── starfield/
+│           ├── scanlines/
+│           ├── shockwave/
+│           └── dissolve/
 │
+├── eslint.config.js                 # ESLint 9 flat config (typescript-eslint)
+├── .prettierrc                      # Prettier config
+├── tsconfig.json
 ├── vercel.json                      # SPA rewrites + hourly cron
 └── vite.config.js
 ```

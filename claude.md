@@ -3,17 +3,19 @@
 ## Project Overview
 
 A Space Invaders clone featuring Tony Pitony as the enemy aliens.
-Built with Vite + vanilla JS + Three.js (only for the game canvas and visual effects).
+Built with Vite + TypeScript + Three.js (only for the game canvas and visual effects).
 The rest of the UI (menus, leaderboard) is pure HTML/CSS.
 
 ## Stack
 
 - Package manager: pnpm
 - Bundler/dev server: Vite
+- Language: TypeScript (strict mode, `noEmit` — Vite handles transpilation)
 - 3D/effects: Three.js (game scene only)
 - Shaders: GLSL via vite-plugin-glsl
-- No frameworks — vanilla JS with ES modules
-- No TypeScript (plain JS with JSDoc comments for types)
+- No frameworks — vanilla TS with ES modules
+- Linting: ESLint 9 flat config with `typescript-eslint`
+- Formatting: Prettier (`singleQuote`, `semi`, `trailingComma: all`, `printWidth: 100`)
 
 ## Design Bible
 
@@ -32,17 +34,124 @@ The rest of the UI (menus, leaderboard) is pure HTML/CSS.
 
 ## Architecture Rules
 
-- Each "page" is a JS module that mounts/unmounts its own DOM
+- Each "page" is a TS module that mounts/unmounts its own DOM
 - Three.js scene is created and destroyed with the game page
-- All pages share a single Router (src/router.js) — hash-based (#home, #game, #end, #leaderboard)
-- Leaderboard data layer must be abstracted behind src/services/leaderboard.js so switching from localStorage to API later requires changing only that file
+- All pages share a single Router (`src/router.ts`) — hash-based (#home, #game, #end, #leaderboard)
+- Leaderboard data layer must be abstracted behind `src/services/leaderboard.ts` so switching from localStorage to API later requires changing only that file
+- Shared TypeScript interfaces live in `src/types/` (entities.ts, game.ts, rendering.ts)
+
+## Source Layout
+
+```
+src/
+├── main.ts                      # Entry point
+├── router.ts                    # Hash-based SPA router
+├── config.ts                    # All magic numbers
+├── vite-env.d.ts
+│
+├── core/                        # Engine primitives
+│   ├── GameLoop.ts
+│   ├── GameState.ts             # State machine + event emitter
+│   └── SceneSetup.ts
+│
+├── entities/                    # Three.js game objects
+│   ├── PlayerEntity.ts
+│   ├── InvaderEntity.ts
+│   ├── BulletPool.ts
+│   ├── BossEntity.ts            # Final boss entry point
+│   ├── BossGeometry.ts
+│   ├── BossMovement.ts
+│   ├── BossAttack.ts
+│   └── BossPhases.ts
+│
+├── systems/                     # Stateless game systems
+│   ├── AudioManager.ts
+│   ├── ChiptunePlayer.ts
+│   ├── CollisionSystem.ts
+│   ├── GridMovement.ts
+│   ├── InputManager.ts
+│   ├── ParticleSystem.ts
+│   ├── WaveManager.ts
+│   └── WaveSpawner.ts
+│
+├── orchestration/               # Wires systems+entities together
+│   ├── GameOrchestrator.ts      # Main game loop owner
+│   ├── BossSpawner.ts
+│   ├── EndConditions.ts
+│   └── TonyModeController.ts
+│
+├── rendering/                   # Post-processing pipeline
+│   ├── PostProcessor.ts
+│   ├── EffectManager.ts
+│   ├── ShockwavePool.ts
+│   └── StarfieldBackground.ts
+│
+├── loading/                     # Asset preloading
+│   ├── LoadingScreen.ts
+│   ├── LoadingOverlay.ts
+│   ├── AssetLoader.ts
+│   └── AudioCache.ts
+│
+├── background/
+│   └── BackgroundRenderer.ts    # Persistent starfield canvas
+│
+├── pages/
+│   ├── GamePage.ts
+│   ├── CreditsPage.ts
+│   ├── home/
+│   │   ├── HomePage.ts
+│   │   ├── HomeDOM.ts
+│   │   └── HomeController.ts
+│   └── end/
+│       ├── EndPage.ts
+│       ├── EndDOM.ts
+│       └── EndController.ts
+│
+├── services/
+│   ├── leaderboard.ts           # API-first data layer + localStorage fallback
+│   └── seo.ts
+│
+├── types/                       # Shared TypeScript interfaces
+│   ├── entities.ts
+│   ├── game.ts
+│   └── rendering.ts
+│
+├── ui/
+│   └── HUD.ts
+│
+├── utils/
+│   ├── dom.ts
+│   ├── formatScore.ts
+│   ├── konamiCode.ts
+│   └── scoreHash.ts
+│
+└── game/
+    └── shaders/                 # GLSL files — imported via vite-plugin-glsl
+        ├── starfield/
+        ├── scanlines/
+        ├── shockwave/
+        └── dissolve/
+```
 
 ## Code Style
 
 - ES modules everywhere, no CommonJS
-- No TypeScript (plain JS with JSDoc comments for types)
-- Prefer composition over classes where possible
-- All magic numbers go in src/config.js
+- TypeScript strict mode — no `any` unless unavoidable (triggers a warning)
+- Prefer composition over classes — factory functions (`createXxx`) not classes
+- All magic numbers go in `src/config.ts`
+- Unused variables prefixed with `_` to suppress lint warnings
+
+## Dev Scripts
+
+```bash
+pnpm dev            # Vite dev server (no API endpoints)
+pnpm dev:vercel     # Full stack — frontend + serverless + .env.local
+pnpm build          # Production bundle
+pnpm typecheck      # tsc --noEmit
+pnpm lint           # ESLint on src/
+pnpm format         # Prettier write on src/
+pnpm format:check   # Prettier check (for CI)
+```
 
 ## Performance Rules
 
@@ -52,9 +161,10 @@ The rest of the UI (menus, leaderboard) is pure HTML/CSS.
 
 ## Shader Files
 
-- .vert and .frag files in src/game/shaders/
-- Imported as strings via vite-plugin-glsl
+- `.vert` and `.frag` files in `src/game/shaders/`
+- Imported as strings via `vite-plugin-glsl`
 - Each shader has its own subfolder with vertex + fragment
+- Shaders remain in `src/game/shaders/` even after the TS migration
 
 ## What NOT to do
 
@@ -63,3 +173,4 @@ The rest of the UI (menus, leaderboard) is pure HTML/CSS.
 - Do not allocate memory in the game loop (no new Vector3() etc.)
 - Do not use document.write or innerHTML for game-critical paths
 - Do not break the 60fps target for visual effects
+- Do not add `.js` files to `src/` — the codebase is fully TypeScript

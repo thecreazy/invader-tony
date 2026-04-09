@@ -4,6 +4,8 @@ All shaders are GLSL ES 1.00 (`WebGL 1` compatible), imported as strings via `vi
 
 Each shader pair lives in its own subfolder under `src/game/shaders/`. Vertex shaders handle geometry transformation; fragment shaders produce the final pixel colour.
 
+> The consuming TypeScript modules import shaders with relative paths such as `../game/shaders/starfield/starfield.vert`. The shader directory is intentionally kept at `src/game/shaders/` as a stable location.
+
 ---
 
 ## Table of Contents
@@ -20,8 +22,8 @@ Each shader pair lives in its own subfolder under `src/game/shaders/`. Vertex sh
 **Files:** `src/game/shaders/starfield/starfield.vert` · `starfield.frag`
 
 **Used by:**
-- `BackgroundRenderer` — persistent canvas behind all pages (OrthographicCamera, `PlaneGeometry(2,2)`)
-- `Game.js` — 3D scene background plane at z = −5 (`PlaneGeometry(50,30)`, PerspectiveCamera)
+- `background/BackgroundRenderer.ts` — persistent canvas behind all pages (OrthographicCamera, `PlaneGeometry(2,2)`)
+- `rendering/StarfieldBackground.ts` — 3D scene background plane at z = −5 (`PlaneGeometry(50,30)`, PerspectiveCamera)
 
 ### Vertex shader
 
@@ -124,7 +126,7 @@ The streak is rendered as a thin line segment in UV space from `(0.85, 0.05)` to
 
 **Files:** `src/game/shaders/scanlines/scanlines.vert` · `scanlines.frag`
 
-**Used by:** `Game.js` — final post-processing pass from the last intermediate `WebGLRenderTarget` to the screen.
+**Used by:** `rendering/PostProcessor.ts` — final post-processing pass from the last intermediate `WebGLRenderTarget` to the screen.
 
 ### Vertex shader
 
@@ -252,7 +254,7 @@ Blends the composited frame toward solid red at 35% weight. `uDamageFlash` decay
 
 **Files:** `src/game/shaders/shockwave/shockwave.vert` · `shockwave.frag`
 
-**Used by:** `Game.js` — ping-pong intermediate passes between the game scene render and the final scanlines pass. Up to 5 simultaneous shockwaves (pool size).
+**Used by:** `rendering/ShockwavePool.ts` — ping-pong intermediate passes between the game scene render and the final scanlines pass. Up to 5 simultaneous shockwaves (pool size).
 
 ### Vertex shader
 
@@ -310,7 +312,7 @@ Only visible in the first ~12% of the animation (`smoothstep(0.12, 0.0, uProgres
 
 **Files:** `src/game/shaders/dissolve/dissolve.vert` · `dissolve.frag`
 
-**Used by:** `TonyInvader.js` — swapped onto an enemy's mesh material on `takeDamage()`.
+**Used by:** `entities/InvaderEntity.ts` — swapped onto an enemy's mesh material on `takeDamage()`.
 
 ### Vertex shader
 
@@ -324,7 +326,7 @@ Standard Three.js passthrough — same as the starfield vertex shader.
 | `uProgress` | `float` | 0.0 = fully visible, 1.0 = fully dissolved |
 | `uTime` | `float` | Elapsed seconds since dissolve started |
 
-`uProgress` is animated from 0 → 1 over 0.4 s in `TonyInvader.update()` (delta × 2.5 per frame).
+`uProgress` is animated from 0 → 1 over 0.4 s in `InvaderEntity.update()` (delta × 2.5 per frame).
 
 #### Noise dissolve threshold
 

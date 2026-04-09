@@ -22,6 +22,7 @@ function getTexture(type) {
       textureElite = new THREE.TextureLoader().load('/assets/tony_enemy2.png');
       textureElite.magFilter = THREE.NearestFilter;
       textureElite.minFilter = THREE.NearestFilter;
+      textureElite.generateMipmaps = false;
     }
     return textureElite;
   } else {
@@ -29,6 +30,7 @@ function getTexture(type) {
       textureBasic = new THREE.TextureLoader().load('/assets/tony_enemy1.png');
       textureBasic.magFilter = THREE.NearestFilter;
       textureBasic.minFilter = THREE.NearestFilter;
+      textureBasic.generateMipmaps = false;
     }
     return textureBasic;
   }

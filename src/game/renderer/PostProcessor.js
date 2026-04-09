@@ -22,10 +22,13 @@ const _pA = new THREE.Vector3();
 export function createPostProcessor(renderer, scene, camera, opts = {}) {
   const { getBoss } = opts;
 
-  const w = window.innerWidth;
-  const h = window.innerHeight;
+  const w   = window.innerWidth;
+  const h   = window.innerHeight;
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
+  // Render targets must match the physical pixel size (w*DPR × h*DPR) so the
+  // final scanlines pass samples 1:1 into the canvas and avoids blur from upscaling.
   function makeRenderTarget(tw, th) {
     return new THREE.WebGLRenderTarget(tw, th, {
       minFilter: THREE.LinearFilter,
@@ -35,8 +38,8 @@ export function createPostProcessor(renderer, scene, camera, opts = {}) {
   }
 
   // ── Render targets ─────────────────────────────────────────────────────────
-  let rtPingA = makeRenderTarget(w, h);
-  let rtPingB = makeRenderTarget(w, h);
+  let rtPingA = makeRenderTarget(w * DPR, h * DPR);
+  let rtPingB = makeRenderTarget(w * DPR, h * DPR);
 
   // ── Screen quad setup ──────────────────────────────────────────────────────
   const screenCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
@@ -161,12 +164,13 @@ export function createPostProcessor(renderer, scene, camera, opts = {}) {
     },
 
     onResize() {
-      const rw = window.innerWidth;
-      const rh = window.innerHeight;
+      const rw  = window.innerWidth;
+      const rh  = window.innerHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
       rtPingA.dispose();
       rtPingB.dispose();
-      rtPingA = makeRenderTarget(rw, rh);
-      rtPingB = makeRenderTarget(rw, rh);
+      rtPingA = makeRenderTarget(rw * dpr, rh * dpr);
+      rtPingB = makeRenderTarget(rw * dpr, rh * dpr);
       if (scanlinesMaterial) {
         scanlinesMaterial.uniforms.uResolution.value.set(rw, rh);
       }

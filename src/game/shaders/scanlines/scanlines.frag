@@ -51,7 +51,7 @@ void main() {
 
   // ── Chromatic aberration (boss-reactive via uChromaticAberration) ──────────
   float edgeDist = length(vUv - 0.5);
-  vec2  caOff    = vec2(uChromaticAberration + edgeDist * 0.003, 0.0);
+  vec2  caOff    = vec2(uChromaticAberration + edgeDist * 0.001, 0.0);
 
   vec4 col;
   col.r = texture2D(uTexture, clamp(sampleUV + caOff, 0.0, 1.0)).r;

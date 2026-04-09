@@ -226,7 +226,7 @@ function buildDOM() {
 
   const bleft = document.createElement('span');
   bleft.className = 'home-bottom-left';
-  bleft.textContent = '\u00A9 1994 TONY CORP';
+  bleft.textContent = '\u00A9 1992 RICCARDO CANELLA';
 
   const bcenter = document.createElement('span');
   bcenter.className = 'home-bottom-center';

@@ -234,7 +234,7 @@ function createOverlay() {
     letterSpacing: '1px',
     textAlign:     'center',
   });
-  footer.textContent = '\u00A9 1994 TONY CORP';
+  footer.textContent = '\u00A9 1992 RICCARDO CANELLA';
   content.appendChild(footer);
 
   return overlay;

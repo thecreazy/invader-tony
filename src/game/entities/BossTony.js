@@ -16,12 +16,12 @@ const QUOTES = [
   [
     'DONNE RICCHE!',
     'CULO!',
-    'SONO IL RE!',
+    'OSSA GROSSE!',
   ],
   [
-    'NON ME NE IMPORTA!',
-    'SIRACUSA IN THE BUILDING!',
-    'TONY NON SI FERMA!',
+    'RESTERO SU DI TE',
+    'COME UNO SCHIZZO',
+    'DISEGNATO DA MONET!',
   ],
   [
     'AAAAAAAHHHH!!!',
@@ -50,9 +50,6 @@ export function createBossTony(scene, opts) {
   } = opts;
 
   // ── Texture & geometry ────────────────────────────────────────────────────
-  // tony_boss.png has alpha=0 on every pixel (broken export) but correct RGB values.
-  // Since the game background is black space, we render the sprite as opaque —
-  // the black areas are invisible against the black background.
   const bossTexture = new THREE.TextureLoader().load(
     '/assets/tony_boss.png',
     undefined,
@@ -61,19 +58,26 @@ export function createBossTony(scene, opts) {
   );
   bossTexture.magFilter = THREE.NearestFilter;
   bossTexture.minFilter = THREE.NearestFilter;
+  bossTexture.generateMipmaps = false;
 
   const geom = new THREE.PlaneGeometry(3.5, 4.0);
   const mat  = new THREE.MeshBasicMaterial({
-    map:        bossTexture,
-    depthWrite: false,
+    map:         bossTexture,
+    transparent: true,
+    depthWrite:  false,
+    depthTest:   false,
   });
   const faceMesh = new THREE.Mesh(geom, mat);
 
-  // Glow halo
+  // Glow halo — rendered before the face (renderOrder 0 < 1)
   const glowGeom = new THREE.SphereGeometry(2.2, 10, 10);
-  const glowMat  = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.10 });
+  const glowMat  = new THREE.MeshBasicMaterial({ color: 0xff8800, transparent: true, opacity: 0.06 });
   const glowMesh = new THREE.Mesh(glowGeom, glowMat);
   glowMesh.position.z = -0.5;
+  glowMesh.renderOrder = 0;
+
+  // Boss sprite always on top of glow
+  faceMesh.renderOrder = 1;
 
   const group = new THREE.Group();
   group.add(glowMesh);

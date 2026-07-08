@@ -62,6 +62,8 @@ export interface IInputManager {
   isLeft(): boolean;
   isRight(): boolean;
   isFirePressed(): boolean;
+  /** Normalised horizontal drag position in [-1, 1], or null when no touch is active. */
+  getDragX(): number | null;
   destroy(): void;
 }
 

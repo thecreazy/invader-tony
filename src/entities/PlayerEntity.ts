@@ -10,6 +10,7 @@ const SHOOT_COOLDOWN = CONFIG.PLAYER.BULLET_COOLDOWN / 1000;
 const BOUNDS = 6.8;
 const FLASH_DURATION = 0.3;
 const INVINCIBLE_DUR = 1.0;
+const DRAG_FOLLOW_RATE = 14;
 
 const _white = new THREE.Color(0xffffff);
 const _cyanDark = new THREE.Color(0x00d4e8);
@@ -201,7 +202,7 @@ export function createPlayerEntity(
   group.add(leftFlame);
   group.add(rightFlame);
 
-  group.position.set(0, -4, 0);
+  group.position.set(0, -6, 0);
   scene.add(group);
 
   // ── State ──────────────────────────────────────────────────────────────────
@@ -222,13 +223,23 @@ export function createPlayerEntity(
     update(dt, input, bulletPool, audio) {
       time += dt;
 
-      let dx = 0;
-      if (input.isLeft()) dx -= SPEED;
-      if (input.isRight()) dx += SPEED;
-      posX = Math.max(-BOUNDS, Math.min(BOUNDS, posX + dx * dt));
+      const dragX = input.getDragX();
+      let moveDelta = 0;
+      if (dragX !== null) {
+        const targetX = dragX * BOUNDS;
+        const nextX = posX + (targetX - posX) * Math.min(1, DRAG_FOLLOW_RATE * dt);
+        moveDelta = nextX - posX;
+        posX = Math.max(-BOUNDS, Math.min(BOUNDS, nextX));
+      } else {
+        let dx = 0;
+        if (input.isLeft()) dx -= SPEED;
+        if (input.isRight()) dx += SPEED;
+        moveDelta = dx * dt;
+        posX = Math.max(-BOUNDS, Math.min(BOUNDS, posX + moveDelta));
+      }
       group.position.x = posX;
 
-      const tiltTarget = dx !== 0 ? -Math.sign(dx) * 0.12 : 0;
+      const tiltTarget = moveDelta !== 0 ? -Math.sign(moveDelta) * 0.12 : 0;
       group.rotation.z += (tiltTarget - group.rotation.z) * 8 * dt;
 
       shootTimer -= dt;

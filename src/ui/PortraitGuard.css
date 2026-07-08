@@ -1,0 +1,41 @@
+/* PortraitGuard.css: shared "rotate your device" overlay for portrait orientation */
+
+.portrait-guard-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 24px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+.portrait-guard-overlay .rotate-icon {
+  font-size: 48px;
+  animation: portrait-guard-rotate-hint 2s ease-in-out infinite;
+  display: inline-block;
+}
+
+.portrait-guard-overlay .rotate-text {
+  color: #ffff00;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-align: center;
+  line-height: 1.8;
+  white-space: pre;
+}
+
+@keyframes portrait-guard-rotate-hint {
+  0% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(90deg);
+  }
+  100% {
+    transform: rotate(0deg);
+  }
+}

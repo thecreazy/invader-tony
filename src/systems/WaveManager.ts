@@ -38,6 +38,7 @@ export function createWaveManager(scene: THREE.Scene, opts: WaveManagerOpts) {
       currentWaveIdx = 0;
       bossSpawned = false;
       waveTransitioning = false;
+      gameState.setWave(1);
       invaders = spawnGrid(scene, CONFIG.WAVES[0], grid, invaders);
     },
 
@@ -79,6 +80,7 @@ export function createWaveManager(scene: THREE.Scene, opts: WaveManagerOpts) {
         if (currentWaveIdx < CONFIG.WAVES.length - 1) {
           currentWaveIdx++;
           const nextWave = CONFIG.WAVES[currentWaveIdx];
+          gameState.setWave(currentWaveIdx + 1);
           hud.showMessage(nextWave.label, 2000);
           audioManager.playWaveClear();
           postProcessor.setWarpIntensity(1.0);

@@ -1,15 +1,11 @@
-// HomeController.ts: Keyboard navigation, attract mode glitch timer, and portrait overlay logic
+// HomeController.ts: Keyboard navigation and attract mode glitch timer
 
 import { navigate } from '../../router.ts';
 import { MENU_ITEMS } from './HomeDOM.ts';
 
 const GLITCH_BASE = 'drop-shadow(0 0 8px #ff6600)';
 
-export function createHomeController(
-  menuEls: HTMLElement[],
-  asciiEl: HTMLImageElement,
-  portraitOverlay: HTMLElement,
-) {
+export function createHomeController(menuEls: HTMLElement[], asciiEl: HTMLImageElement) {
   let selectedIndex = 0;
   let attractTimer: ReturnType<typeof setTimeout> | null = null;
   let glitchInterval: ReturnType<typeof setInterval> | null = null;
@@ -88,10 +84,6 @@ export function createHomeController(
     attractTimer = setTimeout(startAttract, 10_000);
   }
 
-  function updatePortrait(): void {
-    portraitOverlay.style.display = window.innerWidth < window.innerHeight ? 'flex' : 'none';
-  }
-
   function onKeyDown(e: KeyboardEvent): void {
     resetAttract();
     if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
@@ -109,19 +101,12 @@ export function createHomeController(
     }
   }
 
-  function onResize(): void {
-    updatePortrait();
-  }
-
   return {
     mount(): void {
       selectedIndex = 0;
       renderCursor();
-      updatePortrait();
       resetAttract();
       window.addEventListener('keydown', onKeyDown);
-      window.addEventListener('resize', onResize);
-      window.addEventListener('orientationchange', onResize);
     },
 
     onItemClick(index: number): void {
@@ -134,8 +119,6 @@ export function createHomeController(
 
     unmount(): void {
       window.removeEventListener('keydown', onKeyDown);
-      window.removeEventListener('resize', onResize);
-      window.removeEventListener('orientationchange', onResize);
       stopAttract();
       if (attractTimer) {
         clearTimeout(attractTimer);

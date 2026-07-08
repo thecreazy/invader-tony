@@ -10,7 +10,6 @@ export interface HomeDOMRefs {
   root: HTMLElement;
   asciiEl: HTMLImageElement;
   menuEls: HTMLElement[];
-  portraitOverlay: HTMLElement;
 }
 
 export const MENU_ITEMS = [
@@ -91,17 +90,5 @@ export function buildHomeDOM(onItemClick: (i: number) => void): HomeDOMRefs {
   bottom.appendChild(br);
   root.appendChild(bottom);
 
-  const portraitOverlay = document.createElement('div');
-  portraitOverlay.className = 'home-portrait-overlay';
-  const icon = document.createElement('span');
-  icon.className = 'rotate-icon';
-  icon.textContent = '\uD83D\uDCF1';
-  const text = document.createElement('div');
-  text.className = 'rotate-text';
-  text.textContent = 'ROTATE YOUR\nDEVICE';
-  portraitOverlay.appendChild(icon);
-  portraitOverlay.appendChild(text);
-  root.appendChild(portraitOverlay);
-
-  return { root, asciiEl, menuEls, portraitOverlay };
+  return { root, asciiEl, menuEls };
 }

@@ -1,0 +1,264 @@
+/* arcade-ui.css — shared "cabinet panel" design system for the static marketing pages.
+   Every card/label/frame is styled as a physical arcade-cabinet part (bolted metal
+   plate, marquee sign, CRT bezel) instead of a generic translucent dashboard card.
+   Shared across index.html, how-to-play.html, leaderboard.html, credits.html. */
+
+/* ── Bolted cabinet panel — .card, .podium-card, .enemy-card, .boss-card, .panel ── */
+.card,
+.podium-card,
+.enemy-card,
+.boss-card,
+.panel {
+  position: relative;
+  background:
+    radial-gradient(circle at 35% 35%, #d6dae2, #565a6c 55%, transparent 60%) 9px 9px / 7px 7px no-repeat,
+    radial-gradient(circle at 35% 35%, #d6dae2, #565a6c 55%, transparent 60%) calc(100% - 9px) 9px / 7px 7px no-repeat,
+    radial-gradient(circle at 35% 35%, #d6dae2, #565a6c 55%, transparent 60%) 9px calc(100% - 9px) / 7px 7px no-repeat,
+    radial-gradient(circle at 35% 35%, #d6dae2, #565a6c 55%, transparent 60%) calc(100% - 9px) calc(100% - 9px) / 7px 7px no-repeat,
+    linear-gradient(155deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 45%),
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.012) 0 2px, transparent 2px 6px),
+    #101018;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -8px 14px rgba(0, 0, 0, 0.4),
+    0 6px 0 rgba(0, 0, 0, 0.45),
+    0 10px 18px rgba(0, 0, 0, 0.4);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.card:hover,
+.podium-card:hover,
+.enemy-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0, 255, 255, 0.35);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -8px 14px rgba(0, 0, 0, 0.4),
+    0 9px 0 rgba(0, 0, 0, 0.45),
+    0 16px 26px rgba(0, 255, 255, 0.14);
+}
+
+.boss-card {
+  border-color: rgba(255, 0, 68, 0.3);
+}
+.boss-card:hover {
+  border-color: rgba(255, 0, 68, 0.45);
+}
+
+/* ── Marquee section label — .section-label ── */
+.section-label {
+  position: relative;
+  display: block;
+  width: fit-content;
+  margin: 0 auto 56px;
+  padding: 14px 30px 11px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-align: center;
+  text-shadow: 0 0 12px currentColor;
+  border-top: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(0, 0, 0, 0.35));
+  clip-path: polygon(4% 0, 96% 0, 100% 100%, 0% 100%);
+}
+
+.section-label::before {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.75;
+  box-shadow:
+    -30px 0 0 -1px currentColor,
+    -18px 0 0 0 currentColor,
+    -6px 0 0 -1px currentColor,
+    6px 0 0 -1px currentColor,
+    18px 0 0 0 currentColor,
+    30px 0 0 -1px currentColor;
+  animation: bulb-twinkle 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes bulb-twinkle {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── Plate label — smaller nameplate for sub-headers (h2 on guide/credits pages) ── */
+.plate-label {
+  display: inline-block;
+  padding: 5px 12px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 2px 0 rgba(0, 0, 0, 0.4);
+}
+
+/* ── CRT screen frame — .preview-frame ── */
+.preview-frame {
+  position: relative;
+  background: #000;
+  border: 10px solid #16161d;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow:
+    inset 0 0 0 2px rgba(255, 255, 255, 0.06),
+    inset 0 0 40px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(0, 255, 255, 0.15),
+    0 0 50px rgba(0, 255, 255, 0.08),
+    0 10px 0 rgba(0, 0, 0, 0.5);
+  transform-origin: center;
+}
+
+.preview-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.35) 2px,
+    rgba(0, 0, 0, 0.35) 3px
+  );
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+
+.preview-frame.visible {
+  animation: crt-boot 650ms steps(10) both;
+}
+
+@keyframes crt-boot {
+  0% {
+    filter: brightness(3.5) saturate(0);
+    transform: scaleY(0.03);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+    transform: scaleY(1.06);
+  }
+  16% {
+    transform: scaleY(0.9);
+  }
+  22% {
+    transform: scaleY(1);
+    filter: brightness(1.8) saturate(0.6);
+  }
+  100% {
+    filter: brightness(1) saturate(1);
+    transform: scaleY(1);
+  }
+}
+
+/* ── Hazard-stripe warning plate — .disclaimer-box ── */
+.disclaimer-box {
+  position: relative;
+  background: #0d0d05;
+  border: 1px solid rgba(255, 220, 0, 0.35);
+  border-radius: 2px;
+  padding: 32px 32px 32px 44px;
+  overflow: hidden;
+}
+
+.disclaimer-box::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 16px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--yellow) 0 8px,
+    #14140a 8px 16px
+  );
+  box-shadow: 1px 0 0 rgba(255, 220, 0, 0.4);
+}
+
+/* ── Arcade push-button bevel — .btn-primary, .btn-secondary, .btn-back ── */
+.btn-primary {
+  position: relative;
+  background: var(--cyan);
+  color: #000;
+  font-family: 'Press Start 2P', monospace;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.55),
+    inset 0 -5px 0 rgba(0, 0, 0, 0.2),
+    0 0 24px rgba(0, 255, 255, 0.35);
+  transition:
+    box-shadow 0.15s,
+    transform 0.15s;
+}
+.btn-primary:hover {
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -5px 0 rgba(0, 0, 0, 0.2),
+    0 0 48px rgba(0, 255, 255, 0.6);
+  transform: translateY(-2px);
+}
+.btn-primary:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.4),
+    inset 0 2px 0 rgba(0, 0, 0, 0.3),
+    0 0 24px rgba(0, 255, 255, 0.35);
+}
+
+.btn-secondary,
+.btn-back {
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid var(--border);
+  color: var(--dim);
+  font-family: 'Space Mono', monospace;
+  border-radius: 3px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+  transition:
+    border-color 0.15s,
+    color 0.15s,
+    transform 0.15s;
+}
+.btn-secondary:hover,
+.btn-back:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+.btn-secondary:active,
+.btn-back:active {
+  transform: translateY(1px);
+}
+
+/* ── Phosphor-dot texture for alternating sections ── */
+section:nth-child(even) {
+  background:
+    radial-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px) 0 0 / 4px 4px,
+    var(--bg2);
+}

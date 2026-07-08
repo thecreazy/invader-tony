@@ -29,6 +29,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="icon" href="/assets/tony_enemy1.png" type="image/png">
+  <link rel="stylesheet" href="/assets/arcade-ui.css">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -113,23 +114,11 @@
       padding-top: 40px;
       border-top: 1px solid var(--border);
     }
-    .btn-primary {
-      background: var(--cyan); color: #000;
-      font-family: 'Press Start 2P', monospace; font-size: 11px;
-      padding: 14px 28px; border: none; border-radius: 2px;
-      cursor: pointer; text-decoration: none; display: inline-block;
-      box-shadow: 0 0 20px rgba(0,255,255,0.3);
-      transition: box-shadow 0.15s, transform 0.15s;
-    }
-    .btn-primary:hover { box-shadow: 0 0 40px rgba(0,255,255,0.55); transform: translateY(-2px); }
-    .btn-back {
-      background: transparent; border: 2px solid var(--border);
-      color: var(--dim); font-family: 'Space Mono', monospace; font-size: 11px;
-      padding: 14px 24px; border-radius: 2px;
-      text-decoration: none; display: inline-block;
-      transition: border-color 0.15s, color 0.15s;
-    }
-    .btn-back:hover { border-color: var(--cyan); color: var(--cyan); }
+    .btn-primary { font-size: 11px; padding: 14px 28px; }
+    .btn-back { font-size: 11px; padding: 14px 24px; }
+
+    /* SCORES PANEL — bolted cabinet plate wrapping the table */
+    .scores-panel { padding: 8px 20px; }
 
     footer { border-top: 1px solid var(--border); padding: 32px 20px; text-align: center; margin-top: 60px; }
     footer a { font-size: 10px; color: var(--dim); text-decoration: none; margin: 0 12px; }
@@ -149,7 +138,7 @@
     <h1>HALL OF FAME</h1>
     <h2>TOP TONY SLAYERS</h2>
 
-    <div id="scores-list">
+    <div id="scores-list" class="panel scores-panel">
       <p class="empty-msg">ANCORA NESSUN PUNTEGGIO<br>SIATE I PRIMI!</p>
     </div>
 

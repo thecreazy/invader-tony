@@ -209,7 +209,7 @@ Add all five to Vercel project settings → Environment Variables for production
 | `POST` | `/api/session/start` | Issue a signed game session token |
 | `GET`  | `/api/scores` | Fetch top 10 scores (cacheable, `s-maxage=10`) |
 | `POST` | `/api/scores/submit` | Validate and insert a new score |
-| `GET`  | `/api/cleanup` | Delete expired sessions (Vercel Cron, hourly) |
+| `GET`  | `/api/cleanup` | Delete expired sessions (Vercel Cron, daily) |
 
 ---
 
@@ -347,7 +347,7 @@ CREATE POLICY "No public access" ON game_sessions USING (false);
 
 `GET /api/cleanup` deletes `game_sessions` rows with `expires_at` older than 2 hours.
 
-- Runs hourly — configured in `vercel.json → crons`
+- Runs daily at midnight UTC — configured in `vercel.json → crons`
 - Protected by `Authorization: Bearer <CRON_SECRET>` — Vercel injects this automatically
 - Returns `401` for any unauthenticated request
 
@@ -467,7 +467,7 @@ CREATE POLICY "No public access" ON game_sessions USING (false);
 ├── eslint.config.js                 # ESLint 9 flat config (typescript-eslint)
 ├── .prettierrc                      # Prettier config
 ├── tsconfig.json
-├── vercel.json                      # SPA rewrites + hourly cron
+├── vercel.json                      # SPA rewrites + daily cron
 └── vite.config.js
 ```
 

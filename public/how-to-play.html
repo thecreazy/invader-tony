@@ -33,6 +33,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="icon" href="/assets/tony_enemy1.png" type="image/png">
+  <link rel="stylesheet" href="/assets/arcade-ui.css">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -69,6 +70,12 @@
       font-size: 12px;
       margin: 48px 0 24px;
       letter-spacing: 0.1em;
+      display: inline-block;
+      padding: 5px 12px;
+      border: 1px solid currentColor;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.03);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 2px 0 rgba(0,0,0,0.4);
     }
 
     p, li { font-size: 13px; color: var(--dim); line-height: 1.9; }
@@ -93,9 +100,6 @@
       margin-top: 16px;
     }
     .enemy-card {
-      background: rgba(255,255,255,0.02);
-      border: 1px solid var(--border);
-      border-radius: 4px;
       padding: 24px;
       text-align: center;
       flex: 1;
@@ -121,9 +125,6 @@
       display: flex;
       gap: 32px;
       align-items: flex-start;
-      background: rgba(255,0,68,0.04);
-      border: 1px solid rgba(255,0,68,0.2);
-      border-radius: 4px;
       padding: 28px;
       margin-top: 16px;
     }
@@ -143,15 +144,7 @@
 
     /* CTA */
     .cta-wrap { text-align: center; margin-top: 64px; padding-top: 48px; border-top: 1px solid var(--border); }
-    .btn-primary {
-      background: var(--cyan); color: #000;
-      font-family: 'Press Start 2P', monospace; font-size: 12px;
-      padding: 16px 32px; border: none; border-radius: 2px;
-      cursor: pointer; text-decoration: none; display: inline-block;
-      box-shadow: 0 0 24px rgba(0,255,255,0.35);
-      transition: box-shadow 0.15s, transform 0.15s;
-    }
-    .btn-primary:hover { box-shadow: 0 0 48px rgba(0,255,255,0.6); transform: translateY(-2px); }
+    .btn-primary { font-size: 12px; padding: 16px 32px; }
 
     /* FOOTER */
     footer { border-top: 1px solid var(--border); padding: 32px 20px; text-align: center; margin-top: 80px; }
@@ -182,9 +175,8 @@
       </table>
       <h2 style="color:var(--yellow);margin-top:32px;font-size:10px">SU MOBILE</h2>
       <table class="controls-table">
-        <tr><td>ZONA SINISTRA</td><td>Tieni premuto per muoverti a sinistra</td></tr>
-        <tr><td>ZONA DESTRA</td><td>Tieni premuto per muoverti a destra</td></tr>
-        <tr><td>TASTO FIRE</td><td>Spara (centro schermo)</td></tr>
+        <tr><td>TRASCINA</td><td>Trascina il dito ovunque sullo schermo per muovere la navicella</td></tr>
+        <tr><td>AUTO-FIRE</td><td>Si spara in automatico e senza sosta, niente tasti</td></tr>
       </table>
     </section>
 

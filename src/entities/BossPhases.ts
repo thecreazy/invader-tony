@@ -6,7 +6,8 @@ import type { IHud, IParticleSystem, IAudioManager } from '../types/game.ts';
 const QUOTES: string[][] = [
   ['DONNE RICCHE!', 'CULO!', 'OSSA GROSSE!'],
   ['RESTERO SU DI TE', 'COME UNO SCHIZZO', 'DISEGNATO DA MONET!'],
-  ['AAAAAAAHHHH!!!', "TONY PITONY NON E' UNA PERSONA!", "E' UN PENSIERO INTRUSIVO!"],
+  ['TU SEI GERRY SCOTTI!', 'IO SONO IL GABIBBO!', '200 EURO IN CAMBIO DEL CULO!'],
+  ['MI PIACCIONO LE NERE!', 'NON SONO RAZZISTA!', 'IL NERO NON MI RATTRISTA!'],
 ];
 
 export interface BossPhaseState {

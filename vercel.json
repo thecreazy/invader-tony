@@ -1,10 +1,22 @@
 {
   "rewrites": [
-    { "source": "/home", "destination": "/app.html" },
-    { "source": "/game", "destination": "/app.html" },
-    { "source": "/end",  "destination": "/app.html" }
+    {
+      "source": "/home",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/game",
+      "destination": "/app.html"
+    },
+    {
+      "source": "/end",
+      "destination": "/app.html"
+    }
   ],
   "crons": [
-    { "path": "/api/cleanup", "schedule": "0 * * * *" }
+    {
+      "path": "/api/cleanup",
+      "schedule": "0 0 * * *"
+    }
   ]
 }

@@ -54,7 +54,7 @@ export const PERSON_SCHEMA = {
   '@context': 'https://schema.org',
   '@type': 'Person',
   name: 'Riccardo Canella',
-  url: 'https://invadertony.vercel.app/credits',
+  url: 'https://invadertony.canellariccardo.it/credits',
   sameAs: [
     'https://github.com/placeholder',
     'https://linkedin.com/in/placeholder',

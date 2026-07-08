@@ -1,0 +1,136 @@
+/* _base.css — shared look for OG image renders (1200x630), matching the arcade cabinet
+   design system in public/assets/arcade-ui.css. Not shipped to production; used only to
+   render static PNGs via headless Chrome (see scripts/og/render.sh). */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 1200px;
+  height: 630px;
+  overflow: hidden;
+  background: #0a0a0f;
+  font-family: 'Space Mono', monospace;
+  color: #e8e8f0;
+}
+
+.card {
+  position: relative;
+  width: 1200px;
+  height: 630px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+}
+
+/* scanline overlay */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg, transparent, transparent 2px,
+    rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 3px
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* vignette */
+.card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.55) 100%);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.glow-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.content { position: relative; z-index: 2; }
+
+/* corner bolts on the outer frame */
+.bolt {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d6dae2, #565a6c 55%, transparent 60%);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.7);
+  z-index: 2;
+}
+.bolt.tl { top: 22px; left: 22px; }
+.bolt.tr { top: 22px; right: 22px; }
+.bolt.bl { bottom: 22px; left: 22px; }
+.bolt.br { bottom: 22px; right: 22px; }
+
+/* outer frame border, like a bezel */
+.frame-border {
+  position: absolute;
+  inset: 14px;
+  border: 2px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.badge {
+  display: inline-block;
+  border: 1px solid var(--accent, #00ffff);
+  color: var(--accent, #00ffff);
+  font-size: 15px;
+  padding: 8px 20px;
+  border-radius: 3px;
+  letter-spacing: 0.15em;
+  margin-bottom: 28px;
+}
+
+.title {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 64px;
+  line-height: 1.3;
+  margin-bottom: 22px;
+}
+.title .line1 { display: block; color: #00ffff; text-shadow: 0 0 50px rgba(0,255,255,0.55); }
+.title .line2 { display: block; color: #ff00ff; text-shadow: 0 0 50px rgba(255,0,255,0.55); }
+
+.subtitle {
+  font-size: 20px;
+  color: #b8b8d0;
+  max-width: 680px;
+  line-height: 1.6;
+  margin: 0 auto;
+}
+
+.sprite {
+  position: absolute;
+  bottom: 40px;
+  right: 60px;
+  height: 200px;
+  image-rendering: pixelated;
+  z-index: 2;
+  filter: drop-shadow(0 0 26px rgba(57,255,20,0.35));
+}
+
+.sprite.left {
+  right: auto;
+  left: 60px;
+}
+
+.domain {
+  position: absolute;
+  bottom: 26px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  color: #6a6a8a;
+  z-index: 2;
+}

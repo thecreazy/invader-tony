@@ -5,4 +5,4 @@ Allow: /leaderboard
 Disallow: /game
 Disallow: /end
 Disallow: /home
-Sitemap: https://invadertony.vercel.app/sitemap.xml
+Sitemap: https://invadertony.canellariccardo.it/sitemap.xml

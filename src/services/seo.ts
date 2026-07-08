@@ -10,32 +10,32 @@ const PAGE_META: Record<string, PageMeta> = {
   '/': {
     title: 'InvaderTony — Gioco Arcade Gratuito | Tributo a TonyPitony',
     description: 'Spara a Tony Pitony prima che mi denunci.',
-    canonical: 'https://invadertony.vercel.app/',
+    canonical: 'https://invadertony.canellariccardo.it/',
   },
   '/home': {
     title: 'InvaderTony — Gioco Arcade Browser',
     description: 'Un gioco arcade in tributo a Tony Pitony.',
-    canonical: 'https://invadertony.vercel.app/home',
+    canonical: 'https://invadertony.canellariccardo.it/home',
   },
   '/game': {
     title: 'Gioca — InvaderTony',
     description: 'Gioca a InvaderTony: un clone di Space Invaders con shaders GLSL.',
-    canonical: 'https://invadertony.vercel.app/game',
+    canonical: 'https://invadertony.canellariccardo.it/game',
   },
   '/end': {
     title: 'Game Over — InvaderTony',
     description: 'Salva il tuo punteggio e sfida la leaderboard.',
-    canonical: 'https://invadertony.vercel.app/end',
+    canonical: 'https://invadertony.canellariccardo.it/end',
   },
   '/leaderboard': {
     title: 'High Scores — InvaderTony',
     description: 'I migliori punteggi di InvaderTony.',
-    canonical: 'https://invadertony.vercel.app/leaderboard',
+    canonical: 'https://invadertony.canellariccardo.it/leaderboard',
   },
   '/credits': {
     title: 'Credits — InvaderTony | Riccardo Canella',
     description: 'Chi ha fatto InvaderTony.',
-    canonical: 'https://invadertony.vercel.app/credits',
+    canonical: 'https://invadertony.canellariccardo.it/credits',
   },
 };
 

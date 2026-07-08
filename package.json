@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Space Invaders clone featuring Tony Pitony as the alien enemy",
   "type": "module",
+  "packageManager": "pnpm@8.15.6",
   "scripts": {
     "dev": "vite",
     "dev:vercel": "vercel dev",

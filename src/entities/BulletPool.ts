@@ -13,6 +13,13 @@ interface BulletSlot extends IBullet {
   vy: number;
 }
 
+// Bright near-white core tinted with the variant's hue, so the bolt reads as
+// a hot centre wrapped in a coloured glow rather than one flat capsule.
+const CORE_TINT: Record<BulletVariant, number> = {
+  player: 0xd8ffff,
+  enemy: 0xffe0b0,
+};
+
 export function createBulletPool(
   scene: THREE.Scene,
   size: number,
@@ -20,18 +27,35 @@ export function createBulletPool(
 ): IBulletPool {
   const color = variant === 'player' ? CONFIG.COLORS.BULLET_PLAYER : CONFIG.COLORS.BULLET_ENEMY;
 
-  const geom = new THREE.CapsuleGeometry(0.04, 0.22, 2, 6);
-  const mat = new THREE.MeshBasicMaterial({ color });
+  const coreGeom = new THREE.CapsuleGeometry(0.035, 0.24, 2, 6);
+  const coreMat = new THREE.MeshBasicMaterial({ color: CORE_TINT[variant] });
+
+  const glowGeom = new THREE.CapsuleGeometry(0.12, 0.36, 2, 6);
+  const glowMat = new THREE.MeshBasicMaterial({
+    color,
+    transparent: true,
+    opacity: 0.45,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+  });
 
   const pool: BulletSlot[] = [];
 
   for (let i = 0; i < size; i++) {
-    const mesh = new THREE.Mesh(geom, mat);
-    mesh.visible = false;
-    scene.add(mesh);
+    const group = new THREE.Group();
+
+    const glow = new THREE.Mesh(glowGeom, glowMat);
+    glow.position.z = -0.01;
+    group.add(glow);
+
+    const core = new THREE.Mesh(coreGeom, coreMat);
+    group.add(core);
+
+    group.visible = false;
+    scene.add(group);
     pool.push({
       active: false,
-      mesh,
+      mesh: group,
       vx: 0,
       vy: 0,
       activate(x, y, _vx, vy) {
@@ -71,8 +95,10 @@ export function createBulletPool(
 
     dispose(): void {
       for (const b of pool) scene.remove(b.mesh);
-      geom.dispose();
-      mat.dispose();
+      coreGeom.dispose();
+      coreMat.dispose();
+      glowGeom.dispose();
+      glowMat.dispose();
     },
   };
 }

@@ -134,7 +134,7 @@ export interface IBulletPool {
 
 export interface IBullet {
   active: boolean;
-  mesh: THREE.Mesh;
+  mesh: THREE.Group;
   activate(x: number, y: number, vx: number, vy: number): void;
   deactivate(): void;
 }

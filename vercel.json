@@ -11,6 +11,18 @@
     {
       "source": "/end",
       "destination": "/app.html"
+    },
+    {
+      "source": "/how-to-play",
+      "destination": "/how-to-play.html"
+    },
+    {
+      "source": "/leaderboard",
+      "destination": "/leaderboard.html"
+    },
+    {
+      "source": "/credits",
+      "destination": "/credits.html"
     }
   ],
   "crons": [

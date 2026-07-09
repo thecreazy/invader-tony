@@ -9,6 +9,8 @@ export interface EndDOMRefs {
   hintEl: HTMLElement;
   savedMsg: HTMLElement;
   nameInputWrap: HTMLElement;
+  nameForm: HTMLFormElement;
+  nameRealInput: HTMLInputElement;
   playAgainBtn: HTMLButtonElement;
   leaderboardBtn: HTMLButtonElement;
 }
@@ -49,19 +51,39 @@ export function buildEndDOM(score: number, isWin: boolean): EndDOMRefs {
     }),
   );
 
+  const nameForm = document.createElement('form');
+  nameForm.className = 'end-name-form';
+
   const nameInputWrap = document.createElement('div');
   nameInputWrap.className = 'end-name-input-wrap';
   const nameDisplayEl = document.createElement('span');
   nameDisplayEl.className = 'end-name-display';
   const cursorEl = document.createElement('span');
   cursorEl.className = 'end-cursor';
+
+  // Real, focusable input overlaid on top of the pixel-font display above — invisible but
+  // tappable, so mobile browsers actually raise the on-screen keyboard. The visible text
+  // is still rendered by nameDisplayEl/cursorEl to keep the arcade look.
+  const nameRealInput = document.createElement('input');
+  nameRealInput.className = 'end-name-real-input';
+  nameRealInput.type = 'text';
+  nameRealInput.maxLength = 8;
+  nameRealInput.autocapitalize = 'characters';
+  nameRealInput.autocomplete = 'off';
+  nameRealInput.spellcheck = false;
+  nameRealInput.setAttribute('autocorrect', 'off');
+  nameRealInput.setAttribute('inputmode', 'text');
+  nameRealInput.setAttribute('aria-label', 'Your name');
+
   nameInputWrap.appendChild(nameDisplayEl);
   nameInputWrap.appendChild(cursorEl);
+  nameInputWrap.appendChild(nameRealInput);
+  nameForm.appendChild(nameInputWrap);
 
   const hintEl = document.createElement('div');
   hintEl.className = 'end-hint';
   hintEl.textContent = 'MAX 8 CHARS — ENTER TO CONFIRM';
-  nameSection.appendChild(nameInputWrap);
+  nameSection.appendChild(nameForm);
   nameSection.appendChild(hintEl);
   content.appendChild(nameSection);
 
@@ -89,6 +111,8 @@ export function buildEndDOM(score: number, isWin: boolean): EndDOMRefs {
     hintEl,
     savedMsg,
     nameInputWrap,
+    nameForm,
+    nameRealInput,
     playAgainBtn,
     leaderboardBtn,
   };

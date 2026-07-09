@@ -5,6 +5,7 @@ import type { IWaveConfig } from './types/game.ts';
 interface PlayerConfig {
   SPEED: number;
   BULLET_COOLDOWN: number;
+  AUTO_FIRE_COOLDOWN: number;
   LIVES: number;
 }
 
@@ -59,7 +60,7 @@ export const CONFIG: Config = {
   GRID: { COLS: 10, ROWS: 5 },
 
   // ── PLAYER ───────────────────────────────────────────────────────────────
-  PLAYER: { SPEED: 8, BULLET_COOLDOWN: 180, LIVES: 3 },
+  PLAYER: { SPEED: 8, BULLET_COOLDOWN: 180, AUTO_FIRE_COOLDOWN: 350, LIVES: 3 },
 
   // ── ENEMY ────────────────────────────────────────────────────────────────
   ENEMY: {

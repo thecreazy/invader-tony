@@ -90,6 +90,9 @@ export function createInputManager(touchContainer?: HTMLElement): IInputManager 
     getDragX() {
       return _dragX;
     },
+    isTouchDevice() {
+      return isTouchDevice;
+    },
     destroy() {
       window.removeEventListener('keydown', onKeyDown);
       window.removeEventListener('keyup', onKeyUp);

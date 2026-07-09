@@ -20,8 +20,17 @@ export function createEndController(
   score: number,
   meta: { sessionToken: string; scoreHash: string },
 ): { cleanup: () => void } {
-  const { nameDisplayEl, cursorEl, hintEl, savedMsg, nameInputWrap, playAgainBtn, leaderboardBtn } =
-    refs;
+  const {
+    nameDisplayEl,
+    cursorEl,
+    hintEl,
+    savedMsg,
+    nameInputWrap,
+    nameForm,
+    nameRealInput,
+    playAgainBtn,
+    leaderboardBtn,
+  } = refs;
 
   let name = '';
   let submitted = false;
@@ -66,24 +75,45 @@ export function createEndController(
     }
   }
 
+  // Global fallback — lets the "submitted" state react to Enter/Space from anywhere on
+  // the page (no focused element required), and lets desktop players hit Enter to submit
+  // even if focus ever leaves the input.
   function onKeyDown(e: KeyboardEvent): void {
     if (submitting) return;
     if (submitted) {
       if (e.key === 'Enter' || e.key === ' ') navigate('/game');
       return;
     }
-    if (e.key === 'Backspace') {
-      name = name.slice(0, -1);
-      renderName();
-    } else if (e.key === 'Enter') {
+    if (e.key === 'Enter' && document.activeElement !== nameRealInput) {
       void submitScore();
-    } else if (e.key.length === 1 && /[a-zA-Z0-9 ]/.test(e.key) && name.length < 8) {
-      name += e.key.toUpperCase();
-      renderName();
     }
   }
 
   window.addEventListener('keydown', onKeyDown);
+
+  // Real <input> drives the actual typing — required for mobile to raise the on-screen
+  // keyboard at all (see EndDOM.ts). Sanitised/uppercased here, mirrored onto the
+  // pixel-font display so the arcade look is unchanged.
+  function onNameInput(): void {
+    if (submitting || submitted) return;
+    const sanitized = nameRealInput.value.toUpperCase().replace(/[^A-Z0-9 ]/g, '').slice(0, 8);
+    if (sanitized !== nameRealInput.value) nameRealInput.value = sanitized;
+    name = sanitized;
+    renderName();
+  }
+
+  nameRealInput.addEventListener('input', onNameInput);
+  nameInputWrap.addEventListener('click', () => nameRealInput.focus());
+  nameForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (submitted) navigate('/game');
+    else void submitScore();
+  });
+
+  // Auto-focus so desktop players can type immediately without clicking first — mobile
+  // browsers ignore script-triggered focus for opening the keyboard, so this is a no-op
+  // there and a tap is still required, as expected.
+  nameRealInput.focus();
 
   playAgainBtn.addEventListener('click', () => {
     if (!submitted && !submitting) saveScore(name.trim() || 'AAA', score, meta).catch(() => {});

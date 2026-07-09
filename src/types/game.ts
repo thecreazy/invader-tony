@@ -64,6 +64,8 @@ export interface IInputManager {
   isFirePressed(): boolean;
   /** Normalised horizontal drag position in [-1, 1], or null when no touch is active. */
   getDragX(): number | null;
+  /** True on devices driven by the always-on touch auto-fire, rather than manual keyboard fire. */
+  isTouchDevice(): boolean;
   destroy(): void;
 }
 

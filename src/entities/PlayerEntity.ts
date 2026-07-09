@@ -7,6 +7,7 @@ import type { IBulletPool, IAudioManager, IInputManager, IGameState } from '../t
 
 const SPEED = CONFIG.PLAYER.SPEED;
 const SHOOT_COOLDOWN = CONFIG.PLAYER.BULLET_COOLDOWN / 1000;
+const AUTO_FIRE_COOLDOWN = CONFIG.PLAYER.AUTO_FIRE_COOLDOWN / 1000;
 const BOUNDS = 6.8;
 const FLASH_DURATION = 0.3;
 const INVINCIBLE_DUR = 1.0;
@@ -249,7 +250,7 @@ export function createPlayerEntity(
           b.activate(group.position.x, group.position.y + 0.65, 0, 12);
           if (audio) audio.playShoot();
         }
-        shootTimer = SHOOT_COOLDOWN;
+        shootTimer = input.isTouchDevice() ? AUTO_FIRE_COOLDOWN : SHOOT_COOLDOWN;
       }
 
       if (invTimer > 0) {

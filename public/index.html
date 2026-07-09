@@ -244,6 +244,8 @@
     .footer-nav a { font-size:11px; color:var(--dim); text-decoration:none; }
     .footer-nav a:hover { color: var(--cyan); }
     .footer-copy  { font-size:9px; color:var(--dim); margin-top:16px; }
+    .footer-copy a { text-decoration:underline; text-underline-offset:2px; }
+    .footer-copy a:hover { color: var(--cyan); }
 
     /* ANIMATIONS */
     @keyframes fadeInUp   { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
@@ -399,6 +401,23 @@
     </div>
   </section>
 
+  <!-- MADE BY / OPEN SOURCE -->
+  <section id="made-by">
+    <div class="inner" style="text-align:center">
+      <span class="section-label animate-in" style="color:var(--green)">OPEN SOURCE</span>
+      <div class="card animate-in" style="max-width:560px;margin:0 auto;padding:36px 32px">
+        <p style="font-size:13px;color:var(--dim);line-height:1.8;margin-bottom:24px">
+          Creato da <strong style="color:var(--text)">Riccardo Canella</strong> con Three.js, GLSL e tanta pazienza.
+          Codice sorgente completo e gratuito, disponibile su GitHub.
+        </p>
+        <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
+          <a href="https://github.com/thecreazy/invader-tony" target="_blank" rel="noopener" class="btn-primary">★ VIEW ON GITHUB</a>
+          <a href="/credits" class="btn-secondary">CREDITS →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- FOOTER -->
   <footer>
     <p class="footer-title">INVADER TONY</p>
@@ -409,7 +428,7 @@
       <a href="/how-to-play">COME SI GIOCA</a>
       <a href="/credits">CREDITS</a>
     </nav>
-    <p class="footer-copy">© 2026 RICCARDO CANELLA — OPEN SOURCE SU GITHUB</p>
+    <p class="footer-copy">© 2026 RICCARDO CANELLA — <a href="https://github.com/thecreazy/invader-tony" target="_blank" rel="noopener" style="color:inherit">OPEN SOURCE SU GITHUB</a></p>
   </footer>
 
   <!-- Starfield hero background — raw WebGL, no dependencies -->

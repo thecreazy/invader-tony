@@ -41,7 +41,7 @@
 ╚══════════════════════════════╝
 ```
 
-![Game screenshot](docs/screenshot.png)
+![Game screenshot](docs/gameplay.gif)
 
 ---
 

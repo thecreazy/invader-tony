@@ -19,9 +19,11 @@ const MIN_HALF_HEIGHT = 6.5;
 
 // On aspect ratios wider than BASE_ASPECT (e.g. phones in landscape, ~2.1-2.2), a fixed
 // vertical FOV lets the horizontal view keep growing — the fixed-width playfield ends up
-// occupying a shrinking sliver of the screen. This clamps horizontal world-space to what
-// it already is at BASE_ASPECT, narrowing the vertical FOV instead so the playfield keeps
-// filling the screen on ultra-wide mobile screens.
+// occupying a shrinking sliver of the screen, making everything look small. This clamps
+// horizontal world-space to what it already is at BASE_ASPECT, narrowing the vertical FOV
+// instead so the playfield (and its sprites) keep filling the screen on ultra-wide mobile.
+// Vertical breathing room below the ship is handled by the ship's own Y position, not by
+// loosening this zoom — see PlayerEntity's Y offset.
 function computeFov(aspect: number): number {
   const baseHalfHeight = CAMERA_Z * Math.tan(THREE.MathUtils.degToRad(CONFIG.CANVAS.FOV) / 2);
   if (aspect <= BASE_ASPECT) return CONFIG.CANVAS.FOV;

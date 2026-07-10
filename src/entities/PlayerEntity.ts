@@ -203,7 +203,7 @@ export function createPlayerEntity(
   group.add(leftFlame);
   group.add(rightFlame);
 
-  group.position.set(0, -6, 0);
+  group.position.set(0, -5.3, 0);
   scene.add(group);
 
   // ── State ──────────────────────────────────────────────────────────────────

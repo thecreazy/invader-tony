@@ -91,7 +91,7 @@ export const CONFIG: Config = {
   GAMEPLAY: {
     EDGE_RIGHT: 5.5,
     EDGE_LEFT: -5.5,
-    INVADER_FLOOR_Y: -3.2,
+    INVADER_FLOOR_Y: -4.3,
     SHOCKWAVE_POOL_SIZE: 5,
   },
 

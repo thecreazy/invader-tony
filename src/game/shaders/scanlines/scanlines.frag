@@ -8,7 +8,7 @@ uniform float     uTime;
 uniform float     uIntensity;
 uniform float     uTonyMode;
 uniform vec2      uResolution;
-uniform float     uChromaticAberration; // 0.001 baseline → 0.009 at boss death
+uniform float     uChromaticAberration; // 0 baseline → 0.009 at boss death
 uniform float     uDamageFlash;         // 0.0–1.0, fades to 0 after player hit
 uniform float     uWarpIntensity;       // 0.0–1.0, wave transition warp
 
@@ -51,7 +51,7 @@ void main() {
 
   // ── Chromatic aberration (boss-reactive via uChromaticAberration) ──────────
   float edgeDist = length(vUv - 0.5);
-  vec2  caOff    = vec2(uChromaticAberration + edgeDist * 0.001, 0.0);
+  vec2  caOff    = vec2(uChromaticAberration * (1.0 + edgeDist), 0.0);
 
   vec4 col;
   col.r = texture2D(uTexture, clamp(sampleUV + caOff, 0.0, 1.0)).r;

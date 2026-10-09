@@ -16,16 +16,16 @@ function getTexture(type: InvaderType): THREE.Texture {
     if (!textureElite) {
       textureElite = new THREE.TextureLoader().load('/assets/tony_enemy2.png');
       textureElite.magFilter = THREE.LinearFilter;
-      textureElite.minFilter = THREE.LinearFilter;
-      textureElite.generateMipmaps = false;
+      textureElite.minFilter = THREE.LinearMipmapLinearFilter;
+      textureElite.generateMipmaps = true;
     }
     return textureElite;
   }
   if (!textureBasic) {
     textureBasic = new THREE.TextureLoader().load('/assets/tony_enemy1.png');
     textureBasic.magFilter = THREE.LinearFilter;
-    textureBasic.minFilter = THREE.LinearFilter;
-    textureBasic.generateMipmaps = false;
+    textureBasic.minFilter = THREE.LinearMipmapLinearFilter;
+    textureBasic.generateMipmaps = true;
   }
   return textureBasic;
 }

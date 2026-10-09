@@ -39,7 +39,7 @@ export function createEffectManager(scanlinesMaterial: THREE.ShaderMaterial): IE
       }
 
       u['uChromaticAberration'].value =
-        bossHpRatio !== null ? (1.0 - bossHpRatio) * 0.008 + 0.001 : 0.001;
+        bossHpRatio !== null ? (1.0 - bossHpRatio) * 0.009 : 0;
     },
   };
 }

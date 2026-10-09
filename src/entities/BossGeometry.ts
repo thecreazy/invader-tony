@@ -20,8 +20,8 @@ export function createBossGeometry(scene: THREE.Scene): BossRenderObjects {
     (err) => console.error('[BossGeometry] texture load failed:', err),
   );
   texture.magFilter = THREE.LinearFilter;
-  texture.minFilter = THREE.LinearFilter;
-  texture.generateMipmaps = false;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps = true;
 
   const geom = new THREE.PlaneGeometry(3.5, 4.0);
   const mat = new THREE.MeshBasicMaterial({

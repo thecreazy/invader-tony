@@ -27,7 +27,7 @@ export function createPostProcessor(
   const DPR = Math.min(window.devicePixelRatio || 1, 2);
 
   function makeRT(tw: number, th: number): THREE.WebGLRenderTarget {
-    return new THREE.WebGLRenderTarget(tw, th, {
+    return new THREE.WebGLRenderTarget(Math.round(tw), Math.round(th), {
       minFilter: THREE.LinearFilter,
       magFilter: THREE.LinearFilter,
       format: THREE.RGBAFormat,
@@ -48,7 +48,7 @@ export function createPostProcessor(
       uIntensity: { value: 0.8 },
       uTonyMode: { value: 0 },
       uResolution: { value: new THREE.Vector2(w, h) },
-      uChromaticAberration: { value: 0.001 },
+      uChromaticAberration: { value: 0 },
       uDamageFlash: { value: 0.0 },
       uWarpIntensity: { value: 0.0 },
     },

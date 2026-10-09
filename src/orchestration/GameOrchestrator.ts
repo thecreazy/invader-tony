@@ -52,6 +52,11 @@ export function createGameOrchestrator(opts: GameOrchestratorOpts) {
     getBoss: () => boss,
   });
 
+  // Render targets are sized once at creation — without this, a rotation or mobile
+  // address-bar resize leaves them at the old size and the CRT pass stretches them.
+  const onWindowResize = (): void => postProcessor.onResize();
+  window.addEventListener('resize', onWindowResize);
+
   // Score hash chain
   let _sessionToken: string | null = null;
   let _scoreHash = '0';
@@ -218,6 +223,7 @@ export function createGameOrchestrator(opts: GameOrchestratorOpts) {
     destroy(): void {
       gameLoop.stop();
       document.removeEventListener('visibilitychange', visibilityHandler);
+      window.removeEventListener('resize', onWindowResize);
       chiptunePlayer.destroy();
       inputManager.destroy();
       audioManager.destroy();

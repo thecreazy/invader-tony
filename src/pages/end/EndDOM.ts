@@ -11,8 +11,7 @@ export interface EndDOMRefs {
   nameInputWrap: HTMLElement;
   nameForm: HTMLFormElement;
   nameRealInput: HTMLInputElement;
-  playAgainBtn: HTMLButtonElement;
-  leaderboardBtn: HTMLButtonElement;
+  saveBtn: HTMLButtonElement;
 }
 
 export function buildEndDOM(score: number, isWin: boolean): EndDOMRefs {
@@ -82,7 +81,7 @@ export function buildEndDOM(score: number, isWin: boolean): EndDOMRefs {
 
   const hintEl = document.createElement('div');
   hintEl.className = 'end-hint';
-  hintEl.textContent = 'MAX 8 CHARS — ENTER TO CONFIRM';
+  hintEl.textContent = 'MAX 8 CHARS';
   nameSection.appendChild(nameForm);
   nameSection.appendChild(hintEl);
   content.appendChild(nameSection);
@@ -93,14 +92,11 @@ export function buildEndDOM(score: number, isWin: boolean): EndDOMRefs {
 
   const buttons = document.createElement('div');
   buttons.className = 'end-buttons';
-  const playAgainBtn = document.createElement('button');
-  playAgainBtn.className = 'end-btn end-btn-primary';
-  playAgainBtn.textContent = '► PLAY AGAIN';
-  const leaderboardBtn = document.createElement('button');
-  leaderboardBtn.className = 'end-btn end-btn-secondary';
-  leaderboardBtn.textContent = '  HIGH SCORES';
-  buttons.appendChild(playAgainBtn);
-  buttons.appendChild(leaderboardBtn);
+  const saveBtn = document.createElement('button');
+  saveBtn.type = 'button';
+  saveBtn.className = 'end-btn end-btn-primary';
+  saveBtn.textContent = '► SALVA';
+  buttons.appendChild(saveBtn);
   content.appendChild(buttons);
 
   root.appendChild(content);
@@ -113,7 +109,6 @@ export function buildEndDOM(score: number, isWin: boolean): EndDOMRefs {
     nameInputWrap,
     nameForm,
     nameRealInput,
-    playAgainBtn,
-    leaderboardBtn,
+    saveBtn,
   };
 }

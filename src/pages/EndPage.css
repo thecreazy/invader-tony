@@ -241,6 +241,11 @@
   transition: text-shadow 0.1s;
 }
 
+.end-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
 .end-btn-primary {
   color: #39ff14;
   text-shadow: 0 0 6px #39ff14;
@@ -249,13 +254,6 @@
   text-shadow:
     0 0 14px #39ff14,
     0 0 28px #39ff14;
-}
-
-.end-btn-secondary {
-  color: #555;
-}
-.end-btn-secondary:hover {
-  color: #aaa;
 }
 
 .end-saved-msg {
